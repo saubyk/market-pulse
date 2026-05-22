@@ -28,17 +28,15 @@ npm run preview  # serve dist/
 
 Bitcoin is fetched directly from Coinbase's public spot endpoint (CORS-enabled) and refreshes every 8 seconds. The 24-hour reference price and sparkline for BTC come from CoinGecko, refreshed every 5 minutes.
 
-Crude (WTI/Brent), Treasury yields (10Y/30Y), and gold come from Yahoo Finance's unofficial chart endpoint. Yahoo does not send `Access-Control-Allow-Origin`, so the request is proxied through `corsproxy.io`. The data is 15-minute delayed, polled once a minute.
+Crude (WTI/Brent), Treasury yields (10Y/30Y), and gold come from Yahoo Finance's unofficial chart endpoint. Yahoo does not send `Access-Control-Allow-Origin`, so the request is proxied. The data is 15-minute delayed, polled once a minute.
 
 ## CORS proxy caveat
 
-`corsproxy.io` is a free public service. It can rate-limit, slow down, or go offline without notice. If it does, the five Yahoo-backed tiles will show "fetch failed" and retry on the next polling tick. To swap proxies, change one constant in `src/lib/fetchers.ts`:
+Yahoo requests fall through a chain of free public CORS proxies — `corsproxy.io` first, then `api.allorigins.win/raw`. On any non-2xx response or network error from the primary, the fetcher transparently retries via the secondary in the same poll tick. Only if both fail does the tile show "fetch failed", and the next polling tick will retry the whole chain.
 
-```ts
-const PROXY = "https://api.allorigins.win/raw?url=";
-```
+To change the chain (add more, reorder, or pin to one), edit the `PROXIES` array in `src/lib/fetchers.ts`. The fetch logic is in `fetchProxied`.
 
-(See `SPEC.md` §9 for other contingencies.)
+(See `SPEC.md` §9 for other contingencies — Yahoo crumb/cookie requirements, CoinGecko rate limits, etc.)
 
 ## Error handling
 

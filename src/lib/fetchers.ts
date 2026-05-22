@@ -1,4 +1,25 @@
-const PROXY = "https://corsproxy.io/?";
+// Tries each proxy in order; falls through on any non-2xx response or
+// network error. Lets us survive a single proxy paywalling, rate-limiting,
+// or going offline without changing fetcher call sites.
+const PROXIES = [
+  "https://corsproxy.io/?",
+  "https://api.allorigins.win/raw?url=",
+] as const;
+
+async function fetchProxied(targetUrl: string): Promise<Response> {
+  const encoded = encodeURIComponent(targetUrl);
+  let lastErr: unknown = new Error("no proxy attempted");
+  for (const proxy of PROXIES) {
+    try {
+      const res = await fetch(proxy + encoded);
+      if (res.ok) return res;
+      lastErr = new Error(`HTTP ${res.status}`);
+    } catch (e) {
+      lastErr = e;
+    }
+  }
+  throw lastErr;
+}
 
 export type YahooKey = "wti" | "brent" | "tnx" | "tyx" | "gold";
 
@@ -22,8 +43,7 @@ export type YahooQuote = {
 export async function fetchYahoo(key: YahooKey): Promise<YahooQuote> {
   const symbol = YAHOO_SYMBOL[key];
   const target = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=1mo`;
-  const res = await fetch(PROXY + encodeURIComponent(target));
-  if (!res.ok) throw new Error(`Yahoo ${symbol} HTTP ${res.status}`);
+  const res = await fetchProxied(target);
   const data = await res.json();
   const result = data?.chart?.result?.[0];
   if (!result) throw new Error(`Yahoo ${symbol} empty result`);
