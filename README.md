@@ -2,6 +2,8 @@
 
 A zero-config, browser-only dashboard showing six financial instruments organized into three categories:
 
+![Market Pulse dashboard](docs/screenshot.png)
+
 | Category | Instrument | Source | Freshness |
 |---|---|---|---|
 | **Crude** | WTI Crude (`CL=F`) | Yahoo Finance (via `corsproxy.io`) | ~15 min delayed |
