@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { COLORS, FONTS } from "./lib/theme";
 import { fmtClock, fmtDate } from "./lib/format";
 import { Tile, type TileState } from "./components/Tile";
@@ -48,10 +48,45 @@ function useYahooPoll(
   }, [key, setState]);
 }
 
+function Section({
+  title,
+  children,
+}: {
+  title: string;
+  children: ReactNode;
+}) {
+  return (
+    <section style={{ marginBottom: 18 }}>
+      <div
+        style={{
+          fontSize: 10,
+          letterSpacing: "0.28em",
+          color: COLORS.muted,
+          textTransform: "uppercase",
+          marginBottom: 8,
+        }}
+      >
+        {title}
+      </div>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(2, 1fr)",
+          gap: 14,
+        }}
+      >
+        {children}
+      </div>
+    </section>
+  );
+}
+
 export default function App() {
   const [wti, setWti] = useState<TileState>(INITIAL);
   const [brent, setBrent] = useState<TileState>(INITIAL);
   const [tnx, setTnx] = useState<TileState>(INITIAL);
+  const [tyx, setTyx] = useState<TileState>(INITIAL);
+  const [gold, setGold] = useState<TileState>(INITIAL);
 
   // BTC has two sources (Coinbase spot + CoinGecko history). Each updates
   // independently and merges into one tile state.
@@ -70,6 +105,8 @@ export default function App() {
   useYahooPoll("wti", setWti);
   useYahooPoll("brent", setBrent);
   useYahooPoll("tnx", setTnx);
+  useYahooPoll("tyx", setTyx);
+  useYahooPoll("gold", setGold);
 
   // BTC spot
   useEffect(() => {
@@ -198,14 +235,7 @@ export default function App() {
           }}
         />
 
-        {/* grid */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(2, 1fr)",
-            gap: 14,
-          }}
-        >
+        <Section title="Crude">
           <Tile
             index={0}
             ticker="CL=F"
@@ -222,6 +252,9 @@ export default function App() {
             pricePrefix="$"
             state={brent}
           />
+        </Section>
+
+        <Section title="US Treasuries">
           <Tile
             index={2}
             ticker="^TNX"
@@ -233,14 +266,36 @@ export default function App() {
           />
           <Tile
             index={3}
+            ticker="^TYX"
+            name="US 30Y YIELD"
+            sublabel="30-year Treasury yield, %"
+            priceDecimals={3}
+            changeDecimals={3}
+            state={tyx}
+          />
+        </Section>
+
+        <Section title="Scarce Assets">
+          <Tile
+            index={4}
+            ticker="GC=F"
+            name="GOLD"
+            sublabel="Gold futures, $/oz"
+            pricePrefix="$"
+            state={gold}
+          />
+          <Tile
+            index={5}
             ticker="BTC-USD"
             name="BITCOIN"
             sublabel="Spot price, Coinbase"
             pricePrefix="$"
+            priceDecimals={0}
+            changeDecimals={0}
             live
             state={btc}
           />
-        </div>
+        </Section>
 
         {/* divider */}
         <div

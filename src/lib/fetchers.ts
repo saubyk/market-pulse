@@ -1,12 +1,16 @@
 const PROXY = "https://corsproxy.io/?";
 
-export type YahooKey = "wti" | "brent" | "tnx";
+export type YahooKey = "wti" | "brent" | "tnx" | "tyx" | "gold";
 
 const YAHOO_SYMBOL: Record<YahooKey, string> = {
   wti: "CL=F",
   brent: "BZ=F",
   tnx: "^TNX",
+  tyx: "^TYX",
+  gold: "GC=F",
 };
+
+const YIELD_KEYS = new Set<YahooKey>(["tnx", "tyx"]);
 
 export type YahooQuote = {
   price: number;
@@ -32,10 +36,10 @@ export async function fetchYahoo(key: YahooKey): Promise<YahooQuote> {
   const rawPrev: number = meta.chartPreviousClose ?? meta.previousClose;
   const history = closes.filter((v): v is number => v != null);
 
-  // ^TNX is sometimes reported as percent (4.53) and sometimes as percent×10
-  // (45.3). If we see a value above the plausible yield range, assume the
-  // ×10 convention and rescale.
-  const divisor = key === "tnx" && rawPrice > 20 ? 10 : 1;
+  // Yahoo's yield tickers (^TNX, ^TYX) are sometimes reported as percent
+  // (4.53) and sometimes as percent×10 (45.3). If we see a value above the
+  // plausible yield range, assume the ×10 convention and rescale.
+  const divisor = YIELD_KEYS.has(key) && rawPrice > 20 ? 10 : 1;
 
   return {
     price: rawPrice / divisor,

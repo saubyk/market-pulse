@@ -51,12 +51,7 @@ export function Tile({
   const arrow = direction === "up" ? "▲" : direction === "down" ? "▼" : "—";
 
   const priceStr =
-    price != null
-      ? pricePrefix +
-        (pricePrefix === "$" && price >= 1000
-          ? fmtNum(price, 0)
-          : fmtNum(price, priceDecimals))
-      : null;
+    price != null ? pricePrefix + fmtNum(price, priceDecimals) : null;
 
   return (
     <div
