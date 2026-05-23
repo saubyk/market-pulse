@@ -9,18 +9,25 @@ import {
   type YahooKey,
 } from "./lib/fetchers";
 
-const POLL_YAHOO_MS = 60_000;
+const POLL_YAHOO_MS = 5 * 60_000;
 const POLL_BTC_SPOT_MS = 8_000;
 const POLL_BTC_HISTORY_MS = 5 * 60_000;
+
+// Free CORS proxies (corsproxy.io, allorigins) rate-limit bursts from a
+// single IP. Yahoo fetches are dispatched serially with this gap so all
+// five symbols clear the proxy without 429-ing each other out.
+const YAHOO_STAGGER_MS = 400;
 
 const INITIAL: TileState = { loading: true };
 
 function useYahooPoll(
   key: YahooKey,
   setState: (s: TileState) => void,
+  staggerSlot: number,
 ) {
   useEffect(() => {
     let cancelled = false;
+    let intervalId: ReturnType<typeof setInterval> | undefined;
 
     async function tick() {
       try {
@@ -39,13 +46,18 @@ function useYahooPoll(
       }
     }
 
-    tick();
-    const id = setInterval(tick, POLL_YAHOO_MS);
+    const startTimeout = setTimeout(() => {
+      if (cancelled) return;
+      tick();
+      intervalId = setInterval(tick, POLL_YAHOO_MS);
+    }, staggerSlot * YAHOO_STAGGER_MS);
+
     return () => {
       cancelled = true;
-      clearInterval(id);
+      clearTimeout(startTimeout);
+      if (intervalId !== undefined) clearInterval(intervalId);
     };
-  }, [key, setState]);
+  }, [key, setState, staggerSlot]);
 }
 
 function Section({
@@ -102,11 +114,11 @@ export default function App() {
 
   const [now, setNow] = useState(() => new Date());
 
-  useYahooPoll("wti", setWti);
-  useYahooPoll("brent", setBrent);
-  useYahooPoll("tnx", setTnx);
-  useYahooPoll("tyx", setTyx);
-  useYahooPoll("gold", setGold);
+  useYahooPoll("wti", setWti, 0);
+  useYahooPoll("brent", setBrent, 1);
+  useYahooPoll("tnx", setTnx, 2);
+  useYahooPoll("tyx", setTyx, 3);
+  useYahooPoll("gold", setGold, 4);
 
   // BTC spot
   useEffect(() => {
@@ -334,7 +346,7 @@ export default function App() {
           <div>
             Sources — Yahoo via corsproxy.io · Coinbase · CoinGecko
           </div>
-          <div>Polling: BTC 8s · Yahoo 60s · BTC 24h 5m</div>
+          <div>Polling: BTC 8s · Yahoo 5m · BTC 24h 5m</div>
         </div>
 
         {/* disclaimer */}

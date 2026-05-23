@@ -150,7 +150,7 @@ const divisor = key === "tnx" && raw.price > 20 ? 10 : 1;
 |---|---|---|---|
 | BTC spot | Coinbase | **8 seconds** | True real-time feel. |
 | BTC 24h history | CoinGecko | **5 minutes** | Reference for change/sparkline; doesn't need to be fresh. |
-| WTI / Brent / 10Y | Yahoo (proxied) | **60 seconds** | Data is 15-min delayed anyway; no value in polling faster, and slower polling reduces proxy load. |
+| WTI / Brent / 10Y / 30Y / Gold | Yahoo (proxied) | **5 minutes**, staggered ~400ms apart | Data is 15-min delayed anyway; polling faster adds nothing. The stagger keeps the five symbol fetches under the free proxies' per-IP burst threshold. |
 | Clock display | local | **1 second** | UI only. |
 
 All polling uses `setInterval` inside `useEffect`, with proper cleanup on unmount and a `cancel` flag to prevent stale `setState` calls from late responses.

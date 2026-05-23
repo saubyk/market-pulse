@@ -28,7 +28,7 @@ npm run preview  # serve dist/
 
 Bitcoin is fetched directly from Coinbase's public spot endpoint (CORS-enabled) and refreshes every 8 seconds. The 24-hour reference price and sparkline for BTC come from CoinGecko, refreshed every 5 minutes.
 
-Crude (WTI/Brent), Treasury yields (10Y/30Y), and gold come from Yahoo Finance's unofficial chart endpoint. Yahoo does not send `Access-Control-Allow-Origin`, so the request is proxied. The data is 15-minute delayed, polled once a minute.
+Crude (WTI/Brent), Treasury yields (10Y/30Y), and gold come from Yahoo Finance's unofficial chart endpoint. Yahoo does not send `Access-Control-Allow-Origin`, so the request is proxied. The data is 15-minute delayed, so each symbol is polled every 5 minutes and the five fetches are staggered ~400ms apart to stay under the free proxies' per-IP burst limits.
 
 ## CORS proxy caveat
 
