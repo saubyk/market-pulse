@@ -49,6 +49,20 @@ Each tile manages its own loading and error state. A failure in one fetch never 
 - Header (clock + date), source/disclaimer footer
 - Aesthetic target: refined Bloomberg terminal, not crypto-bro dashboard
 
+## Deploying as a sub-route
+
+By default, `npm run build` produces a root-relative bundle that drops onto any static host (Netlify, Vercel, GitHub Pages, Cloudflare Pages) and works at the domain root.
+
+If you need to serve the dashboard from a sub-path instead — e.g. `example.com/market-pulse/` — use:
+
+```bash
+npm run build:satusd
+```
+
+That builds with Vite's `--base=/market-pulse/` so asset URLs resolve under the sub-path. Copy the resulting `dist/` into your host's `market-pulse/` directory.
+
+This repo also ships a `.github/workflows/deploy-satusd.yml` Action that builds and pushes the output to `saubyk/satusd.com`. It is specific to the satusd.com deploy and is irrelevant to other forks — feel free to delete it if you're using market-pulse elsewhere.
+
 ## Disclaimer
 
 Not investment advice. Prices are delayed by at least 15 minutes for crude oil and Treasury yields. Bitcoin spot is sourced from Coinbase. Data sources may rate-limit or fail without notice.

@@ -1,0 +1,65 @@
+# Builds market-pulse and deploys it into saubyk/satusd.com under /market-pulse/.
+#
+# One-time setup (required before this workflow can push):
+#   1. Create a fine-grained personal access token at
+#      https://github.com/settings/personal-access-tokens/new
+#      - Resource owner: saubyk
+#      - Repository access: only saubyk/satusd.com
+#      - Repository permissions: Contents -> Read and write
+#   2. In this repo (saubyk/market-pulse), add the token as a secret named
+#      SATUSD_DEPLOY_TOKEN under Settings -> Secrets and variables -> Actions.
+#
+# Triggered automatically on push to main, or manually via the Actions tab.
+
+name: Deploy to satusd.com/market-pulse
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout market-pulse
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build with /market-pulse/ base
+        run: npm run build:satusd
+
+      - name: Checkout satusd.com
+        uses: actions/checkout@v4
+        with:
+          repository: saubyk/satusd.com
+          ref: master
+          token: ${{ secrets.SATUSD_DEPLOY_TOKEN }}
+          path: satusd.com
+
+      - name: Sync dist into satusd.com/market-pulse/
+        run: |
+          rm -rf satusd.com/market-pulse
+          mkdir -p satusd.com/market-pulse
+          cp -R dist/. satusd.com/market-pulse/
+
+      - name: Commit and push if changed
+        working-directory: satusd.com
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add market-pulse
+          if git diff --cached --quiet; then
+            echo "No changes to deploy."
+          else
+            git commit -m "Deploy market-pulse from saubyk/market-pulse@${GITHUB_SHA::7}"
+            git push
+          fi

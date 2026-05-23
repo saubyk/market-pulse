@@ -178,13 +178,27 @@ export default function App() {
         {/* eyebrow */}
         <div
           style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "baseline",
+            gap: 16,
             fontSize: 10,
             letterSpacing: "0.28em",
             color: COLORS.muted,
             textTransform: "uppercase",
           }}
         >
-          Free-Tier Market Terminal
+          <span>Free-Tier Market Terminal</span>
+          <a
+            href="https://satusd.com/"
+            style={{
+              color: COLORS.muted,
+              textDecoration: "none",
+              letterSpacing: "0.28em",
+            }}
+          >
+            ← satusd.com
+          </a>
         </div>
 
         {/* title + clock */}
