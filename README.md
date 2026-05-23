@@ -6,12 +6,12 @@ A zero-config, browser-only dashboard showing six financial instruments organize
 
 | Category | Instrument | Source | Freshness |
 |---|---|---|---|
+| **Scarce Assets** | Bitcoin (`BTC-USD`) | Coinbase spot + CoinGecko 24h history | **Live** (8s polling) |
+| **Scarce Assets** | Gold (`GC=F`) | Yahoo Finance (via `corsproxy.io`) | ~15 min delayed |
 | **Crude** | WTI Crude (`CL=F`) | Yahoo Finance (via `corsproxy.io`) | ~15 min delayed |
 | **Crude** | Brent Crude (`BZ=F`) | Yahoo Finance (via `corsproxy.io`) | ~15 min delayed |
 | **US Treasuries** | US 10Y Yield (`^TNX`) | Yahoo Finance (via `corsproxy.io`) | ~15 min delayed |
 | **US Treasuries** | US 30Y Yield (`^TYX`) | Yahoo Finance (via `corsproxy.io`) | ~15 min delayed |
-| **Scarce Assets** | Gold (`GC=F`) | Yahoo Finance (via `corsproxy.io`) | ~15 min delayed |
-| **Scarce Assets** | Bitcoin (`BTC-USD`) | Coinbase spot + CoinGecko 24h history | **Live** (8s polling) |
 
 No backend, no API keys, no auth. Deploys as static files to Netlify, Vercel, GitHub Pages, or Cloudflare Pages.
 

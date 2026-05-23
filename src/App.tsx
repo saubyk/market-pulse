@@ -261,9 +261,31 @@ export default function App() {
           }}
         />
 
-        <Section title="Crude">
+        <Section title="Scarce Assets">
           <Tile
             index={0}
+            ticker="BTC-USD"
+            name="BITCOIN"
+            sublabel="Spot price, Coinbase"
+            pricePrefix="$"
+            priceDecimals={0}
+            changeDecimals={0}
+            live
+            state={btc}
+          />
+          <Tile
+            index={1}
+            ticker="GC=F"
+            name="GOLD"
+            sublabel="Gold futures, $/oz"
+            pricePrefix="$"
+            state={gold}
+          />
+        </Section>
+
+        <Section title="Crude">
+          <Tile
+            index={2}
             ticker="CL=F"
             name="WTI CRUDE"
             sublabel="West Texas Intermediate, $/bbl"
@@ -271,7 +293,7 @@ export default function App() {
             state={wti}
           />
           <Tile
-            index={1}
+            index={3}
             ticker="BZ=F"
             name="BRENT CRUDE"
             sublabel="North Sea benchmark, $/bbl"
@@ -282,7 +304,7 @@ export default function App() {
 
         <Section title="US Treasuries">
           <Tile
-            index={2}
+            index={4}
             ticker="^TNX"
             name="US 10Y YIELD"
             sublabel="10-year Treasury yield, %"
@@ -291,35 +313,13 @@ export default function App() {
             state={tnx}
           />
           <Tile
-            index={3}
+            index={5}
             ticker="^TYX"
             name="US 30Y YIELD"
             sublabel="30-year Treasury yield, %"
             priceDecimals={3}
             changeDecimals={3}
             state={tyx}
-          />
-        </Section>
-
-        <Section title="Scarce Assets">
-          <Tile
-            index={4}
-            ticker="GC=F"
-            name="GOLD"
-            sublabel="Gold futures, $/oz"
-            pricePrefix="$"
-            state={gold}
-          />
-          <Tile
-            index={5}
-            ticker="BTC-USD"
-            name="BITCOIN"
-            sublabel="Spot price, Coinbase"
-            pricePrefix="$"
-            priceDecimals={0}
-            changeDecimals={0}
-            live
-            state={btc}
           />
         </Section>
 
