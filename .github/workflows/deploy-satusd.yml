@@ -23,10 +23,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout market-pulse
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: "20"
           cache: "npm"
@@ -38,7 +38,7 @@ jobs:
         run: npm run build:satusd
 
       - name: Checkout satusd.com
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: saubyk/satusd.com
           ref: master
