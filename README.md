@@ -8,8 +8,8 @@ A zero-config, browser-only dashboard showing six financial instruments organize
 |---|---|---|---|
 | **Scarce Assets** | Bitcoin (`BTC-USD`) | Coinbase spot + CoinGecko 24h history | **Live** (8s polling) |
 | **Scarce Assets** | Gold (`GC=F`) | Yahoo Finance (via `corsproxy.io`) | ~15 min delayed |
-| **Crude** | WTI Crude (`CL=F`) | Yahoo Finance (via `corsproxy.io`) | ~15 min delayed |
-| **Crude** | Brent Crude (`BZ=F`) | Yahoo Finance (via `corsproxy.io`) | ~15 min delayed |
+| **Energy & Metals** | Copper (`HG=F`) | Yahoo Finance (via `corsproxy.io`) | ~15 min delayed |
+| **Energy & Metals** | Brent Crude (`BZ=F`) | Yahoo Finance (via `corsproxy.io`) | ~15 min delayed |
 | **US Treasuries** | US 10Y Yield (`^TNX`) | Yahoo Finance (via `corsproxy.io`) | ~15 min delayed |
 | **US Treasuries** | US 30Y Yield (`^TYX`) | Yahoo Finance (via `corsproxy.io`) | ~15 min delayed |
 
@@ -28,7 +28,7 @@ npm run preview  # serve dist/
 
 Bitcoin is fetched directly from Coinbase's public spot endpoint (CORS-enabled) and refreshes every 8 seconds. The 24-hour reference price and sparkline for BTC come from CoinGecko, refreshed every 5 minutes.
 
-Crude (WTI/Brent), Treasury yields (10Y/30Y), and gold come from Yahoo Finance's unofficial chart endpoint. Yahoo does not send `Access-Control-Allow-Origin`, so the request is proxied. The data is 15-minute delayed, so each symbol is polled every 5 minutes and the five fetches are staggered ~400ms apart to stay under the free proxies' per-IP burst limits.
+Copper, Brent crude, Treasury yields (10Y/30Y), and gold come from Yahoo Finance's unofficial chart endpoint. Yahoo does not send `Access-Control-Allow-Origin`, so the request is proxied. The data is 15-minute delayed, so each symbol is polled every 5 minutes and the five fetches are staggered ~400ms apart to stay under the free proxies' per-IP burst limits.
 
 ## CORS proxy caveat
 
@@ -45,7 +45,7 @@ Each tile manages its own loading and error state. A failure in one fetch never 
 ## Layout
 
 - Centered, max-width 980px
-- 3 categorized sections (Crude, US Treasuries, Scarce Assets), 2 tiles each
+- 3 categorized sections (Energy & Metals, US Treasuries, Scarce Assets), 2 tiles each
 - Header (clock + date), source/disclaimer footer
 - Aesthetic target: refined Bloomberg terminal, not crypto-bro dashboard
 
@@ -65,4 +65,4 @@ This repo also ships a `.github/workflows/deploy-satusd.yml` Action that builds 
 
 ## Disclaimer
 
-Not investment advice. Prices are delayed by at least 15 minutes for crude oil and Treasury yields. Bitcoin spot is sourced from Coinbase. Data sources may rate-limit or fail without notice.
+Not investment advice. Prices are delayed by at least 15 minutes for commodities and Treasury yields. Bitcoin spot is sourced from Coinbase. Data sources may rate-limit or fail without notice.

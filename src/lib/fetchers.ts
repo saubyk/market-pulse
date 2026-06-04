@@ -21,10 +21,10 @@ async function fetchProxied(targetUrl: string): Promise<Response> {
   throw lastErr;
 }
 
-export type YahooKey = "wti" | "brent" | "tnx" | "tyx" | "gold";
+export type YahooKey = "copper" | "brent" | "tnx" | "tyx" | "gold";
 
 const YAHOO_SYMBOL: Record<YahooKey, string> = {
-  wti: "CL=F",
+  copper: "HG=F",
   brent: "BZ=F",
   tnx: "^TNX",
   tyx: "^TYX",

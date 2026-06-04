@@ -94,7 +94,7 @@ function Section({
 }
 
 export default function App() {
-  const [wti, setWti] = useState<TileState>(INITIAL);
+  const [copper, setCopper] = useState<TileState>(INITIAL);
   const [brent, setBrent] = useState<TileState>(INITIAL);
   const [tnx, setTnx] = useState<TileState>(INITIAL);
   const [tyx, setTyx] = useState<TileState>(INITIAL);
@@ -114,7 +114,7 @@ export default function App() {
 
   const [now, setNow] = useState(() => new Date());
 
-  useYahooPoll("wti", setWti, 0);
+  useYahooPoll("copper", setCopper, 0);
   useYahooPoll("brent", setBrent, 1);
   useYahooPoll("tnx", setTnx, 2);
   useYahooPoll("tyx", setTyx, 3);
@@ -283,14 +283,16 @@ export default function App() {
           />
         </Section>
 
-        <Section title="Crude">
+        <Section title="Energy & Metals">
           <Tile
             index={2}
-            ticker="CL=F"
-            name="WTI CRUDE"
-            sublabel="West Texas Intermediate, $/bbl"
+            ticker="HG=F"
+            name="COPPER"
+            sublabel="Copper futures, $/lb"
             pricePrefix="$"
-            state={wti}
+            priceDecimals={3}
+            changeDecimals={3}
+            state={copper}
           />
           <Tile
             index={3}
@@ -362,7 +364,7 @@ export default function App() {
           }}
         >
           Not investment advice. Prices are delayed by at least 15 minutes for
-          crude oil and Treasury yields. Bitcoin spot is sourced from Coinbase.
+          commodities and Treasury yields. Bitcoin spot is sourced from Coinbase.
           Data sources may rate-limit or fail without notice.
         </div>
       </div>
