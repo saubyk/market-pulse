@@ -55,11 +55,11 @@ export function Tile({
 
   return (
     <div
+      className="tile"
       style={{
         border: `1px solid ${COLORS.border}`,
         background: COLORS.panel,
         borderRadius: 6,
-        padding: "18px 20px",
         display: "flex",
         flexDirection: "column",
         gap: 10,

@@ -25,6 +25,40 @@ body {
   min-height: 100vh;
 }
 
+/* Outer page padding. Generous on desktop, tightened on small screens so
+   tiles keep as much width as possible. Lives in CSS (not an inline style)
+   because inline styles outrank media queries. */
+.app-shell {
+  padding: 48px 24px 60px;
+}
+
+/* Each section's tile grid: two columns on desktop, a single stacked
+   column once the viewport is too narrow for two readable tiles. */
+.tile-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+
+.tile {
+  padding: 18px 20px;
+}
+
+@media (max-width: 640px) {
+  .app-shell {
+    padding: 28px 14px 40px;
+  }
+  .tile-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  /* Reclaim horizontal room so the price + sparkline row stays roomy on
+     the narrowest phones. */
+  .tile {
+    padding: 16px;
+  }
+}
+
 @keyframes fadeUp {
   from {
     opacity: 0;

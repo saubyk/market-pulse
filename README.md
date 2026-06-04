@@ -51,6 +51,7 @@ Each tile manages its own loading and error state. A failure in one fetch never 
 - Centered, max-width 980px
 - 3 categorized sections (Energy & Metals, US Treasuries, Scarce Assets), 2 tiles each
 - Header (clock + date), source/disclaimer footer
+- **Responsive:** each section is a two-column grid on desktop that collapses to a single stacked column at ≤640px; page/tile padding tightens and the title scales fluidly (`clamp`) so it reads cleanly down to ~320px. The breakpoint lives in `src/styles.css` (`.tile-grid`, `.app-shell`, `.tile`).
 - Aesthetic target: refined Bloomberg terminal, not crypto-bro dashboard
 
 ## Deploying as a sub-route

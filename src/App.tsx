@@ -88,15 +88,7 @@ function Section({
       >
         {title}
       </div>
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(2, 1fr)",
-          gap: 14,
-        }}
-      >
-        {children}
-      </div>
+      <div className="tile-grid">{children}</div>
     </section>
   );
 }
@@ -187,9 +179,9 @@ export default function App() {
 
   return (
     <div
+      className="app-shell"
       style={{
         minHeight: "100vh",
-        padding: "48px 24px 60px",
         display: "flex",
         justifyContent: "center",
       }}
@@ -201,7 +193,8 @@ export default function App() {
             display: "flex",
             justifyContent: "space-between",
             alignItems: "baseline",
-            gap: 16,
+            flexWrap: "wrap",
+            gap: "4px 16px",
             fontSize: 10,
             letterSpacing: "0.28em",
             color: COLORS.muted,
@@ -227,8 +220,9 @@ export default function App() {
             display: "flex",
             alignItems: "flex-end",
             justifyContent: "space-between",
+            flexWrap: "wrap",
             margin: "2px 0 22px",
-            gap: 24,
+            gap: "8px 24px",
           }}
         >
           <h1
@@ -236,7 +230,7 @@ export default function App() {
               fontFamily: FONTS.display,
               fontStyle: "italic",
               fontWeight: 400,
-              fontSize: 46,
+              fontSize: "clamp(32px, 9vw, 46px)",
               margin: 0,
               color: COLORS.text,
               lineHeight: 1,
@@ -347,6 +341,8 @@ export default function App() {
           style={{
             display: "flex",
             justifyContent: "space-between",
+            flexWrap: "wrap",
+            gap: "6px 16px",
             fontSize: 10,
             letterSpacing: "0.18em",
             color: COLORS.muted,

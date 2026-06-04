@@ -198,6 +198,7 @@ Initial load: fire all fetches in parallel on mount. Don't await anything before
 - Centered container, max-width ~980px.
 - Three labeled sections (Scarce Assets, Energy & Metals, US Treasuries), each a two-column grid of 2 tiles, gap ~14px.
 - Header above, source footer below.
+- **Responsive:** at ≤640px the grids collapse to a single column, page/tile padding tightens, and the title font scales with `clamp()`. Implemented as CSS classes (`.tile-grid`, `.app-shell`, `.tile`) in `styles.css` rather than inline styles, since inline styles outrank media queries. Header eyebrow / title / source rows use `flex-wrap` to fold gracefully.
 
 ### 5.2 Tile contents (each tile)
 
@@ -348,7 +349,7 @@ The implementation is done when:
 - Watchlist customization.
 - Historical charts beyond the sparkline.
 - Push notifications / alerts.
-- Mobile-specific layout (the two-column sections collapsing to single-column on narrow viewports is acceptable but not required).
+- Mobile-*first* layout (desktop-first with a responsive collapse is the approach; the two-column sections fold to a single stacked column at ≤640px via CSS — see §5.1 — but no separate mobile design is maintained).
 - Dark/light mode toggle (dark only).
 - I18N / currency conversion.
 
