@@ -7,7 +7,7 @@ A minimal, browser-only dashboard that displays financial instruments side-by-si
 ## 1. Goals & Non-Goals
 
 ### Goals
-- Single-page dashboard showing live or near-live prices for the four instruments above.
+- Single-page dashboard showing live or near-live prices for the six instruments above.
 - Zero-config setup: clone, install, run. No API keys, no server.
 - Honest about data freshness: live where possible, clearly labeled as delayed otherwise.
 - Robust to API hiccups: a failed tile must not break the others.
@@ -27,7 +27,7 @@ A minimal, browser-only dashboard that displays financial instruments side-by-si
 | Layer | Choice | Reason |
 |---|---|---|
 | Build tool | **Vite** | Fastest cold start, simple static output. |
-| Framework | **React 18 + TypeScript** | Component model fits the four-tile layout; TS catches the kinds of bugs that show up in API parsing. |
+| Framework | **React 18 + TypeScript** | Component model fits the six-tile layout; TS catches the kinds of bugs that show up in API parsing. |
 | Styling | **Plain CSS or inline styles** | The design is custom and small; a utility framework is overkill. Tailwind is acceptable if the implementer prefers it. |
 | State | **`useState` + `useEffect`** | No global state needed. |
 | Charts | **Hand-rolled SVG** | One small sparkline component, ~30 lines. No chart library dependency. |
@@ -40,7 +40,7 @@ No backend. No environment variables. No build-time secrets.
 
 ## 3. Data Sources
 
-All four data sources are free and require no API key. Three of them are reached through a public CORS proxy because the underlying provider does not send `Access-Control-Allow-Origin` headers.
+All data sources are free and require no API key. Only Yahoo Finance is reached through a public CORS proxy because it does not send `Access-Control-Allow-Origin` headers; Coinbase and CoinGecko send permissive CORS headers and are called directly.
 
 ### 3.1 CORS proxy
 
@@ -171,15 +171,23 @@ Initial load: fire all fetches in parallel on mount. Don't await anything before
 │  Market Pulse              THU, MAY 21, 2026            │
 │                                       14:32:08          │
 │  ───────────────────────────────────────────            │
+│  SCARCE ASSETS                                          │
+│  ┌─────────────────────┐ ┌─────────────────────┐        │
+│  │ BTC-USD · BITCOIN   │ │ GC=F · GOLD         │        │
+│  │ $62,108             │ │ $2,412              │        │
+│  │ ▲ +1,240  +2.03%    │ │ ▲ +8.40  +0.35%     │        │
+│  └─────────────────────┘ └─────────────────────┘        │
+│  ENERGY & METALS                                        │
 │  ┌─────────────────────┐ ┌─────────────────────┐        │
 │  │ HG=F · COPPER       │ │ BZ=F · BRENT CRUDE  │        │
 │  │ $4.521              │ │ $66.84              │        │
 │  │ ▲ +0.023  +0.51%    │ │ ▲ +0.31  +0.47%     │        │
 │  └─────────────────────┘ └─────────────────────┘        │
+│  US TREASURIES                                          │
 │  ┌─────────────────────┐ ┌─────────────────────┐        │
-│  │ ^TNX · US 10Y YIELD │ │ BTC-USD · BITCOIN   │        │
-│  │ 4.234               │ │ $62,108             │        │
-│  │ ▲ +0.012  +0.28%    │ │ ▲ +1,240  +2.03%    │        │
+│  │ ^TNX · US 10Y YIELD │ │ ^TYX · US 30Y YIELD │        │
+│  │ 4.234               │ │ 4.512               │        │
+│  │ ▲ +0.012  +0.28%    │ │ ▲ +0.009  +0.20%    │        │
 │  └─────────────────────┘ └─────────────────────┘        │
 │  ───────────────────────────────────────────            │
 │  SOURCES — YAHOO via corsproxy.io · COINBASE · COINGECKO│
@@ -187,7 +195,7 @@ Initial load: fire all fetches in parallel on mount. Don't await anything before
 ```
 
 - Centered container, max-width ~980px.
-- 2×2 grid of tiles, gap ~14px.
+- Three labeled sections (Scarce Assets, Energy & Metals, US Treasuries), each a two-column grid of 2 tiles, gap ~14px.
 - Header above, source footer below.
 
 ### 5.2 Tile contents (each tile)
@@ -302,7 +310,7 @@ market-pulse/
     └── styles.css             // global resets, font imports, keyframes
 ```
 
-Keep it flat. No `src/hooks/`, no `src/utils/`, no Redux folder. This is a four-tile dashboard.
+Keep it flat. No `src/hooks/`, no `src/utils/`, no Redux folder. This is a six-tile dashboard.
 
 ---
 
@@ -322,10 +330,10 @@ These are documented for the implementer; they are **not** required in v1.
 The implementation is done when:
 
 - [ ] Running `npm install && npm run dev` opens a working dashboard with no console errors.
-- [ ] All four tiles render a current price within 10 seconds of page load on a normal connection.
+- [ ] All six tiles render a current price within 10 seconds of page load on a normal connection.
 - [ ] BTC price updates visibly within ~8 seconds of a real price move on Coinbase.
 - [ ] The 10Y yield tile shows a value between roughly 3 and 6 (i.e. as a percent, not as percent × 10).
-- [ ] Killing the network (DevTools offline) within 60 seconds causes the three Yahoo-backed tiles to show "fetch failed" and BTC to follow within 8 seconds. Restoring the network restores all tiles within one polling interval.
+- [ ] Killing the network (DevTools offline) within 60 seconds causes the five Yahoo-backed tiles (Copper, Brent, 10Y, 30Y, Gold) to show "fetch failed" and BTC to follow within 8 seconds. Restoring the network restores all tiles within one polling interval.
 - [ ] `npm run build` produces a static bundle deployable to any static host.
 - [ ] The README explains: what it does, what's live vs delayed, the CORS-proxy caveat, and how to run it.
 
@@ -339,7 +347,7 @@ The implementation is done when:
 - Watchlist customization.
 - Historical charts beyond the sparkline.
 - Push notifications / alerts.
-- Mobile-specific layout (the 2×2 grid collapsing to 1×4 on narrow viewports is acceptable but not required).
+- Mobile-specific layout (the two-column sections collapsing to single-column on narrow viewports is acceptable but not required).
 - Dark/light mode toggle (dark only).
 - I18N / currency conversion.
 
