@@ -32,15 +32,19 @@ Copper, Brent crude, Treasury yields (10Y/30Y), and gold come from Yahoo Finance
 
 ## CORS proxy caveat
 
-Yahoo requests fall through a chain of free public CORS proxies — `corsproxy.io` first, then `api.allorigins.win/raw`. On any non-2xx response or network error from the primary, the fetcher transparently retries via the secondary in the same poll tick. Only if both fail does the tile show "fetch failed", and the next polling tick will retry the whole chain.
+Yahoo sends no CORS headers and increasingly blocks datacenter IPs, so no single free proxy is reliable: `corsproxy.io` 403s server-side requests, `api.allorigins.win/raw` is valid but often slow (10–20s) or 5xx, and `api.codetabs.com` gets throttled by Yahoo's edge. Resilience therefore comes from layering, not any one proxy:
 
-To change the chain (add more, reorder, or pin to one), edit the `PROXIES` array in `src/lib/fetchers.ts`. The fetch logic is in `fetchProxied`.
+- **Rotation** — each request tries the three proxies in order, validating the JSON *inside* the loop so a proxy that answers `200` with junk (an HTML interstitial, "Edge: Too Many Requests") falls through to the next instead of poisoning the tile.
+- **Per-attempt timeout** — each proxy attempt is capped at 8s (`AbortController`) so one stalled proxy can't hold up the tick.
+- **Retry** — if a full rotation fails, the fetcher pauses ~700ms and runs the rotation once more, which clears most transient single-tick failures.
+
+To change the chain (add more, reorder, or pin to one), edit the `PROXIES` array in `src/lib/fetchers.ts`. The rotation lives in `fetchYahooOnce`; the retry wrapper is `fetchYahoo`.
 
 (See `SPEC.md` §9 for other contingencies — Yahoo crumb/cookie requirements, CoinGecko rate limits, etc.)
 
 ## Error handling
 
-Each tile manages its own loading and error state. A failure in one fetch never affects another tile. There is no retry/backoff — the polling interval is the retry. Disconnecting the network causes tiles to show "fetch failed" within their poll interval; reconnecting restores them on the next tick.
+Each tile manages its own loading and error state. A failure in one fetch never affects another tile. When a Yahoo tile that has already loaded hits a transient failure, it keeps showing its last good price — the `UPD` timestamp reveals how stale it is — rather than blanking to "fetch failed". Only a tile that has *never* loaded shows the error state. Disconnecting the network keeps the last values frozen (timestamps stop advancing); reconnecting refreshes them on the next successful tick.
 
 ## Layout
 

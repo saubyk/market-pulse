@@ -1,24 +1,31 @@
-// Tries each proxy in order; falls through on any non-2xx response or
-// network error. Lets us survive a single proxy paywalling, rate-limiting,
-// or going offline without changing fetcher call sites.
+// Yahoo has no CORS headers and increasingly blocks datacenter IPs, so we
+// fan a request out across several free public proxies in order. None of
+// them is individually reliable — corsproxy.io 403s server-side requests,
+// allorigins can take 20s+ or return 5xx, codetabs gets rate-limited by
+// Yahoo's edge — so resilience comes from rotation + per-attempt timeout
+// + a retry of the whole rotation (see fetchYahoo). Order is browser-fast
+// first, slow-but-usually-valid last.
 const PROXIES = [
   "https://corsproxy.io/?",
   "https://api.allorigins.win/raw?url=",
+  "https://api.codetabs.com/v1/proxy?quest=",
 ] as const;
 
-async function fetchProxied(targetUrl: string): Promise<Response> {
-  const encoded = encodeURIComponent(targetUrl);
-  let lastErr: unknown = new Error("no proxy attempted");
-  for (const proxy of PROXIES) {
-    try {
-      const res = await fetch(proxy + encoded);
-      if (res.ok) return res;
-      lastErr = new Error(`HTTP ${res.status}`);
-    } catch (e) {
-      lastErr = e;
-    }
+// Cap each proxy attempt so one hung/slow proxy (allorigins routinely
+// stalls 10-20s) gets aborted and we rotate to the next instead of
+// blocking the whole 5-min poll tick on it.
+const ATTEMPT_TIMEOUT_MS = 8_000;
+
+const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+async function fetchWithTimeout(url: string): Promise<Response> {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), ATTEMPT_TIMEOUT_MS);
+  try {
+    return await fetch(url, { signal: ctrl.signal });
+  } finally {
+    clearTimeout(timer);
   }
-  throw lastErr;
 }
 
 export type YahooKey = "copper" | "brent" | "tnx" | "tyx" | "gold";
@@ -40,14 +47,7 @@ export type YahooQuote = {
   lastUpdate: number;
 };
 
-export async function fetchYahoo(key: YahooKey): Promise<YahooQuote> {
-  const symbol = YAHOO_SYMBOL[key];
-  const target = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=1mo`;
-  const res = await fetchProxied(target);
-  const data = await res.json();
-  const result = data?.chart?.result?.[0];
-  if (!result) throw new Error(`Yahoo ${symbol} empty result`);
-
+function parseYahoo(key: YahooKey, result: any): YahooQuote {
   const meta = result.meta ?? {};
   const closes: (number | null)[] =
     result.indicators?.quote?.[0]?.close ?? [];
@@ -68,6 +68,53 @@ export async function fetchYahoo(key: YahooKey): Promise<YahooQuote> {
     lastUpdate:
       (meta.regularMarketTime ?? Math.floor(Date.now() / 1000)) * 1000,
   };
+}
+
+// One pass over the proxy rotation. Validates the payload *inside* the loop
+// so a proxy that answers 200 with junk (an HTML interstitial, "Edge: Too
+// Many Requests", a paywall) falls through to the next proxy instead of
+// returning bad data or aborting the whole fetch.
+async function fetchYahooOnce(key: YahooKey): Promise<YahooQuote> {
+  const symbol = YAHOO_SYMBOL[key];
+  const target = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=1mo`;
+  const encoded = encodeURIComponent(target);
+  let lastErr: unknown = new Error("no proxy attempted");
+
+  for (const proxy of PROXIES) {
+    try {
+      const res = await fetchWithTimeout(proxy + encoded);
+      if (!res.ok) {
+        lastErr = new Error(`HTTP ${res.status}`);
+        continue;
+      }
+      const data = await res.json();
+      const result = data?.chart?.result?.[0];
+      if (!result?.meta?.regularMarketPrice) {
+        lastErr = new Error("empty/invalid result");
+        continue;
+      }
+      return parseYahoo(key, result);
+    } catch (e) {
+      lastErr = e;
+    }
+  }
+  throw lastErr;
+}
+
+export async function fetchYahoo(key: YahooKey): Promise<YahooQuote> {
+  // Two passes over the full rotation. The free proxies fail transiently
+  // (slow allorigins, momentary Yahoo edge throttling), so a second pass
+  // after a short pause clears most single-tick failures.
+  let lastErr: unknown;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      return await fetchYahooOnce(key);
+    } catch (e) {
+      lastErr = e;
+      if (attempt === 0) await delay(700);
+    }
+  }
+  throw lastErr;
 }
 
 export type BTCSpot = { price: number; lastUpdate: number };

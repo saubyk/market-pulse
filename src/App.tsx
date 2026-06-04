@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { COLORS, FONTS } from "./lib/theme";
 import { fmtClock, fmtDate } from "./lib/format";
 import { Tile, type TileState } from "./components/Tile";
@@ -25,6 +25,12 @@ function useYahooPoll(
   setState: (s: TileState) => void,
   staggerSlot: number,
 ) {
+  // Last successful quote for this tile. On a transient proxy failure we
+  // re-show this (with its original UPD timestamp, which honestly signals
+  // staleness) rather than blanking the tile to "fetch failed". Only a tile
+  // that has never loaded shows the error state.
+  const lastGood = useRef<TileState | null>(null);
+
   useEffect(() => {
     let cancelled = false;
     let intervalId: ReturnType<typeof setInterval> | undefined;
@@ -33,16 +39,18 @@ function useYahooPoll(
       try {
         const q = await fetchYahoo(key);
         if (cancelled) return;
-        setState({
+        const next: TileState = {
           loading: false,
           price: q.price,
           previousClose: q.previousClose,
           history: q.history,
           lastUpdate: q.lastUpdate,
-        });
+        };
+        lastGood.current = next;
+        setState(next);
       } catch {
         if (cancelled) return;
-        setState({ loading: false, error: true });
+        setState(lastGood.current ?? { loading: false, error: true });
       }
     }
 
