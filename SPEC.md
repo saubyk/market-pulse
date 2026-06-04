@@ -1,6 +1,6 @@
 # Market Pulse — Specification
 
-A minimal, browser-only dashboard that displays four financial instruments side-by-side: **WTI crude**, **Brent crude**, **US 10-Year Treasury yield**, and **Bitcoin**. Designed to run entirely as a static SPA — no backend, no API keys, no auth.
+A minimal, browser-only dashboard that displays financial instruments side-by-side across three categories — **Energy & Metals** (Copper, Brent crude), **US Treasuries** (10Y, 30Y yields), and **Scarce Assets** (Bitcoin, Gold). Designed to run entirely as a static SPA — no backend, no API keys, no auth.
 
 ---
 
@@ -87,7 +87,7 @@ Use `prices[0][1]` as the 24h-ago reference for computing change. Use the full a
 
 **Rate limit:** ~10–30 req/min on the free tier. Polling this once every 5 minutes keeps usage trivial.
 
-### 3.4 WTI, Brent, 10Y Treasury — Yahoo Finance (15-min delayed, via proxy)
+### 3.4 Copper, Brent, Treasuries, Gold — Yahoo Finance (15-min delayed, via proxy)
 
 **Endpoint pattern:**
 ```
@@ -96,9 +96,11 @@ GET https://query1.finance.yahoo.com/v8/finance/chart/{SYMBOL}?interval=1d&range
 
 | Instrument | Symbol |
 |---|---|
-| WTI Crude | `CL=F` |
+| Copper | `HG=F` |
 | Brent Crude | `BZ=F` |
 | US 10-Year Treasury Yield | `^TNX` |
+| US 30-Year Treasury Yield | `^TYX` |
+| Gold | `GC=F` |
 
 **Response shape (abridged):**
 ```json
@@ -106,16 +108,16 @@ GET https://query1.finance.yahoo.com/v8/finance/chart/{SYMBOL}?interval=1d&range
   "chart": {
     "result": [{
       "meta": {
-        "regularMarketPrice": 65.21,
-        "chartPreviousClose": 65.40,
-        "previousClose": 65.40,
+        "regularMarketPrice": 4.521,
+        "chartPreviousClose": 4.498,
+        "previousClose": 4.498,
         "regularMarketTime": 1734567890,
-        "symbol": "CL=F"
+        "symbol": "HG=F"
       },
       "timestamp": [1731000000, ...],
       "indicators": {
         "quote": [{
-          "close": [65.0, 65.5, ...],
+          "close": [4.48, 4.50, ...],
           "open": [...], "high": [...], "low": [...], "volume": [...]
         }]
       }
@@ -150,7 +152,7 @@ const divisor = key === "tnx" && raw.price > 20 ? 10 : 1;
 |---|---|---|---|
 | BTC spot | Coinbase | **8 seconds** | True real-time feel. |
 | BTC 24h history | CoinGecko | **5 minutes** | Reference for change/sparkline; doesn't need to be fresh. |
-| WTI / Brent / 10Y / 30Y / Gold | Yahoo (proxied) | **5 minutes**, staggered ~400ms apart | Data is 15-min delayed anyway; polling faster adds nothing. The stagger keeps the five symbol fetches under the free proxies' per-IP burst threshold. |
+| Copper / Brent / 10Y / 30Y / Gold | Yahoo (proxied) | **5 minutes**, staggered ~400ms apart | Data is 15-min delayed anyway; polling faster adds nothing. The stagger keeps the five symbol fetches under the free proxies' per-IP burst threshold. |
 | Clock display | local | **1 second** | UI only. |
 
 All polling uses `setInterval` inside `useEffect`, with proper cleanup on unmount and a `cancel` flag to prevent stale `setState` calls from late responses.
@@ -170,9 +172,9 @@ Initial load: fire all fetches in parallel on mount. Don't await anything before
 │                                       14:32:08          │
 │  ───────────────────────────────────────────            │
 │  ┌─────────────────────┐ ┌─────────────────────┐        │
-│  │ CL=F · WTI CRUDE    │ │ BZ=F · BRENT CRUDE  │        │
-│  │ $63.21              │ │ $66.84              │        │
-│  │ ▼ -0.42  -0.66%     │ │ ▲ +0.31  +0.47%     │        │
+│  │ HG=F · COPPER       │ │ BZ=F · BRENT CRUDE  │        │
+│  │ $4.521              │ │ $66.84              │        │
+│  │ ▲ +0.023  +0.51%    │ │ ▲ +0.31  +0.47%     │        │
 │  └─────────────────────┘ └─────────────────────┘        │
 │  ┌─────────────────────┐ ┌─────────────────────┐        │
 │  │ ^TNX · US 10Y YIELD │ │ BTC-USD · BITCOIN   │        │
@@ -190,8 +192,8 @@ Initial load: fire all fetches in parallel on mount. Don't await anything before
 
 ### 5.2 Tile contents (each tile)
 
-1. **Top row:** ticker label (e.g. `CL=F · WTI CRUDE`) on the left, freshness tag on the right (`LIVE` with pulsing dot for BTC, `DLY 15m` muted for others).
-2. **Sublabel:** small italic serif description, e.g. "West Texas Intermediate, $/bbl".
+1. **Top row:** ticker label (e.g. `HG=F · COPPER`) on the left, freshness tag on the right (`LIVE` with pulsing dot for BTC, `DLY 15m` muted for others).
+2. **Sublabel:** small italic serif description, e.g. "Copper futures, $/lb".
 3. **Price:** large monospace, light weight (~300), with currency prefix.
 4. **Change row:** arrow + absolute change + percent change, colored green/red. Sparkline aligned to the right of this row.
 5. **Footer:** small "UPD HH:MM:SS" timestamp showing last successful fetch.
@@ -250,9 +252,11 @@ type Tile = {
 };
 
 type DashboardState = {
-  wti: Tile;
+  copper: Tile;
   brent: Tile;
   tnx: Tile;
+  tyx: Tile;
+  gold: Tile;
   btc: Tile;
 };
 ```
@@ -343,4 +347,4 @@ The implementation is done when:
 
 ## 12. Disclaimer (must appear in the UI footer)
 
-> NOT INVESTMENT ADVICE. Prices are delayed by at least 15 minutes for crude oil and Treasury yields. Bitcoin spot is sourced from Coinbase. Data sources may rate-limit or fail without notice.
+> NOT INVESTMENT ADVICE. Prices are delayed by at least 15 minutes for commodities and Treasury yields. Bitcoin spot is sourced from Coinbase. Data sources may rate-limit or fail without notice.
