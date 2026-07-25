@@ -4,12 +4,13 @@
 //
 // The primary is a self-hosted Cloudflare Worker pinned to Yahoo's chart
 // endpoint (source + one-command deploy in worker/): fast, CORS-native,
-// and edge-cached so all visitors share one Yahoo fetch per symbol. The
-// free public proxies stay as fallback — a clone of this repo works
-// without deploying anything, and if the worker is unreachable the
-// rotation degrades to them. Of the public set: corsproxy.io's free tier
-// serves only localhost/dev origins (in production it 403s instantly,
-// which is a cheap fall-through), allorigins is valid but often slow,
+// and edge-cached so all visitors share one Yahoo fetch per symbol. It is
+// origin-locked to satusd.com and localhost — local dev of any clone gets
+// the fast path, but a *deployed* fork 403s here instantly and falls
+// through to the public proxies below (or deploy your own worker and
+// swap this first entry; see README). Of the public set: corsproxy.io's
+// free tier serves only localhost/dev origins (in production it 403s
+// instantly, a cheap fall-through), allorigins is valid but often slow,
 // codetabs gets throttled by Yahoo's edge.
 const PROXIES = [
   "https://market-pulse-proxy.suheb-khan.workers.dev/?url=",

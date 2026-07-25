@@ -1,9 +1,11 @@
 // Pinned CORS proxy for market-pulse's Yahoo Finance fetches.
 //
 // Not an open proxy: only Yahoo's v8 chart endpoint is forwarded — any other
-// target is rejected. Responses are cached at the Cloudflare edge for
-// CACHE_TTL_S, so however many visitors the dashboard has, Yahoo sees at most
-// one request per symbol per TTL window per edge location.
+// target is rejected — and only browser requests from the allowed origins
+// (the deployed dashboard, plus localhost dev) are answered. Responses are
+// cached at the Cloudflare edge for CACHE_TTL_S, so however many visitors
+// the dashboard has, Yahoo sees at most one request per symbol per TTL
+// window per edge location.
 //
 // Deploy (one-time, from this directory):
 //   npx wrangler deploy
@@ -13,21 +15,47 @@
 const ALLOWED_PREFIX = "https://query1.finance.yahoo.com/v8/finance/chart/";
 const CACHE_TTL_S = 120;
 
-const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, OPTIONS",
-  "Access-Control-Allow-Headers": "*",
-};
+// Origin lock: only the deployed dashboard and local dev may use this
+// worker. Forks of market-pulse get a fast 403 here and fall through to
+// the public proxies in the rotation (or deploy their own worker — see
+// the README). Browsers can't spoof Origin, which is the freeloading
+// vector this guards against; it is not a security boundary for
+// non-browser clients.
+const ALLOWED_ORIGINS = new Set([
+  "https://satusd.com",
+  "https://www.satusd.com",
+]);
+
+function isAllowedOrigin(origin) {
+  if (!origin) return false;
+  if (ALLOWED_ORIGINS.has(origin)) return true;
+  // Local dev of any clone — harmless, mirrors corsproxy.io's policy.
+  return /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+}
+
+function corsHeaders(origin) {
+  return {
+    "Access-Control-Allow-Origin": origin,
+    "Access-Control-Allow-Methods": "GET, OPTIONS",
+    "Access-Control-Allow-Headers": "*",
+    Vary: "Origin",
+  };
+}
 
 export default {
   async fetch(request) {
+    const origin = request.headers.get("Origin");
+    if (!isAllowedOrigin(origin)) {
+      return new Response("origin not allowed", { status: 403 });
+    }
+
     if (request.method === "OPTIONS") {
-      return new Response(null, { headers: CORS_HEADERS });
+      return new Response(null, { headers: corsHeaders(origin) });
     }
     if (request.method !== "GET") {
       return new Response("method not allowed", {
         status: 405,
-        headers: CORS_HEADERS,
+        headers: corsHeaders(origin),
       });
     }
 
@@ -35,7 +63,7 @@ export default {
     if (!target || !target.startsWith(ALLOWED_PREFIX)) {
       return new Response("target must be a Yahoo v8 chart URL", {
         status: 400,
-        headers: CORS_HEADERS,
+        headers: corsHeaders(origin),
       });
     }
 
@@ -49,7 +77,7 @@ export default {
       cf: { cacheTtl: CACHE_TTL_S, cacheEverything: true },
     });
 
-    const headers = new Headers(CORS_HEADERS);
+    const headers = new Headers(corsHeaders(origin));
     headers.set(
       "Content-Type",
       upstream.headers.get("Content-Type") ?? "application/json",

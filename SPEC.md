@@ -44,7 +44,7 @@ All data sources are free and require no API key. Only Yahoo Finance is reached 
 
 ### 3.1 CORS proxy
 
-Yahoo sends no CORS headers, so its requests are proxied. The **primary** is a self-hosted Cloudflare Worker (`worker/` — deploy with `npx wrangler deploy`): pinned to Yahoo's v8 chart endpoint only, CORS `*`, and edge-cached for 120s so any number of visitors produce at most one Yahoo fetch per symbol per TTL per edge location. The free public proxies stay in the rotation as fallback so a fresh clone works with zero deploys:
+Yahoo sends no CORS headers, so its requests are proxied. The **primary** is a self-hosted Cloudflare Worker (`worker/` — deploy with `npx wrangler deploy`): pinned to Yahoo's v8 chart endpoint only, origin-locked to the deployed dashboard's domain plus localhost (`ALLOWED_ORIGINS` in `worker/index.js`), and edge-cached for 120s so any number of visitors produce at most one Yahoo fetch per symbol per TTL per edge location. The free public proxies stay in the rotation as fallback so a fresh clone works with zero deploys (deployed forks run on the fallbacks until they deploy their own worker):
 
 ```ts
 const PROXIES = [

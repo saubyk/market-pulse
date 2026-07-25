@@ -34,6 +34,8 @@ Copper, Brent crude, Treasury yields (10Y/30Y), and gold come from Yahoo Finance
 
 Yahoo sends no CORS headers, so its requests must be proxied. The primary proxy is a **self-hosted Cloudflare Worker** (source and one-command deploy in `worker/`): it forwards only Yahoo's v8 chart endpoint, adds CORS headers, and caches responses at the edge for 2 minutes so all visitors share one Yahoo fetch per symbol. The free Workers tier (100k requests/day) is far more than this dashboard can use.
 
+The deployed worker is **origin-locked**: it answers requests from satusd.com and from localhost (so `npm run dev` of any clone gets the fast path), and 403s everything else. A *deployed* fork therefore falls through to the public proxies until you deploy your own worker (below) — edit `ALLOWED_ORIGINS` in `worker/index.js` to your own domain.
+
 The free public proxies remain in the rotation as fallback, so a fresh clone works without deploying anything — but don't count on them alone: `corsproxy.io`'s free tier now serves **only localhost/dev origins** (it 403s in production as of mid-2026), `api.allorigins.win/raw` is valid but often slow (10–20s) or 5xx, and `api.codetabs.com` gets throttled by Yahoo's edge. Resilience comes from layering:
 
 - **Rotation** — each request tries the proxies in order (worker first), validating the JSON *inside* the loop so a proxy that answers `200` with junk (an HTML interstitial, "Edge: Too Many Requests") falls through to the next instead of poisoning the tile.
