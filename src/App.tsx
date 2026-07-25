@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { COLORS, FONTS } from "./lib/theme";
 import { fmtClock, fmtDate } from "./lib/format";
 import { Tile, type TileState } from "./components/Tile";
+import { ThemeToggle } from "./components/ThemeToggle";
 import {
   fetchYahoo,
   fetchBTCSpot,
@@ -202,16 +203,19 @@ export default function App() {
           }}
         >
           <span>Free-Tier Market Terminal</span>
-          <a
-            href="https://satusd.com/"
-            style={{
-              color: COLORS.muted,
-              textDecoration: "none",
-              letterSpacing: "0.28em",
-            }}
-          >
-            ← satusd.com
-          </a>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 14 }}>
+            <a
+              href="https://satusd.com/"
+              style={{
+                color: COLORS.muted,
+                textDecoration: "none",
+                letterSpacing: "0.28em",
+              }}
+            >
+              ← satusd.com
+            </a>
+            <ThemeToggle />
+          </span>
         </div>
 
         {/* title + clock */}

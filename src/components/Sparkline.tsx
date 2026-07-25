@@ -39,20 +39,22 @@ export function Sparkline({ data, color, width = 140, height = 36 }: Props) {
     >
       <defs>
         <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={color} stopOpacity="0.18" />
-          <stop offset="100%" stopColor={color} stopOpacity="0" />
+          {/* Colors are var(--up)/var(--down) references, which SVG
+              presentation attributes don't resolve — apply via style. */}
+          <stop offset="0%" style={{ stopColor: color, stopOpacity: 0.18 }} />
+          <stop offset="100%" style={{ stopColor: color, stopOpacity: 0 }} />
         </linearGradient>
       </defs>
       <polygon points={polygon} fill={`url(#${gradId})`} />
       <polyline
         points={polyline}
         fill="none"
-        stroke={color}
+        style={{ stroke: color }}
         strokeWidth={1.25}
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-      <circle cx={lastX} cy={lastY} r={2} fill={color} />
+      <circle cx={lastX} cy={lastY} r={2} style={{ fill: color }} />
     </svg>
   );
 }

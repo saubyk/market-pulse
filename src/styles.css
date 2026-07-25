@@ -1,5 +1,56 @@
 @import url("https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@300;400;500&display=swap");
 
+/* ===== Theme tokens =====
+   Shared with satusd.com: light is the default (what renders with no saved
+   preference and no JS), dark is opt-in via the header toggle, applied
+   through the data-theme="dark" attribute that the inline script in
+   index.html sets before first paint from localStorage("theme"). Same
+   localStorage key as satusd.com, so on satusd.com/market-pulse the
+   preference carries across both pages.
+
+   Surfaces, text tiers, and accent adopt satusd.com's token values verbatim
+   (style.css there) — keep the two files in sync when adjusting either.
+
+   Two accent tokens, as on satusd: full bitcoin orange is only ~2.2:1 on
+   white, so --accent is reserved for decorative marks (the LIVE pulsing
+   dot) and --accent-text (darkened in light mode) for anything text-sized
+   (the LIVE label). Identical in dark mode.
+
+   --up / --down are market-pulse-specific (price direction, at text size):
+   the sage/terracotta of the original dark design, deepened in light mode
+   to stay legible (~4.5:1) on the white tile. */
+:root {
+  --bg-top: #ffffff;
+  --bg-bottom: #f0eeea;
+  --panel: #ffffff;
+  --border: #e4e0da;
+  --text: #1a1a1a;
+  --text-dim: #55524d;
+  --muted: #6b6862;
+  --faint: #cdc7be;
+  --up: #467a2f;
+  --down: #ab4e29;
+  --accent: #f7931a;
+  --accent-text: #a35f00;
+  --shadow-tile: 0 18px 44px rgba(60, 50, 35, 0.1);
+}
+
+:root[data-theme="dark"] {
+  --bg-top: #181818;
+  --bg-bottom: #0b0b0b;
+  --panel: #141414;
+  --border: #242424;
+  --text: #f1f1f1;
+  --text-dim: #9a9a9a;
+  --muted: #7c7c7c;
+  --faint: #3c3c3c;
+  --up: #8fb877;
+  --down: #d97757;
+  --accent: #f7931a;
+  --accent-text: #f7931a;
+  --shadow-tile: 0 24px 60px rgba(0, 0, 0, 0.45);
+}
+
 *,
 *::before,
 *::after {
@@ -15,14 +66,15 @@ body,
 }
 
 body {
-  background: #0c0b09;
-  background-image: radial-gradient(ellipse at top, #16140f 0%, #0c0b09 60%);
-  color: #f0ebe0;
+  background-color: var(--bg-bottom);
+  background-image: radial-gradient(120% 80% at 50% -10%, var(--bg-top) 0%, var(--bg-bottom) 58%);
+  color: var(--text);
   font-family: "JetBrains Mono", monospace;
   font-weight: 400;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   min-height: 100vh;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 /* Outer page padding. Generous on desktop, tightened on small screens so
@@ -59,6 +111,41 @@ body {
   }
 }
 
+/* ===== Theme toggle ===== */
+.theme-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.theme-btn:hover {
+  color: var(--accent-text);
+}
+
+.theme-btn svg {
+  display: block;
+}
+
+/* The button shows the theme it switches *to*: moon while light, sun while dark. */
+.theme-btn .icon-sun {
+  display: none;
+}
+
+:root[data-theme="dark"] .theme-btn .icon-sun {
+  display: block;
+}
+
+:root[data-theme="dark"] .theme-btn .icon-moon {
+  display: none;
+}
+
 @keyframes fadeUp {
   from {
     opacity: 0;
@@ -77,5 +164,11 @@ body {
   }
   50% {
     opacity: 0.35;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body {
+    transition: none;
   }
 }

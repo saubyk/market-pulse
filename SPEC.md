@@ -208,23 +208,29 @@ Initial load: fire all fetches in parallel on mount. Don't await anything before
 4. **Change row:** arrow + absolute change + percent change, colored green/red. Sparkline aligned to the right of this row.
 5. **Footer:** small "UPD HH:MM:SS" timestamp showing last successful fetch.
 
-### 5.3 Design tokens
+### 5.3 Design tokens & theming
 
-```ts
-const COLORS = {
-  bg: "#0c0b09",                                // near-black, warm
-  bgGrad: "radial-gradient(ellipse at top, #16140f 0%, #0c0b09 60%)",
-  panel: "rgba(255, 250, 235, 0.025)",
-  border: "rgba(240, 230, 200, 0.09)",
-  text: "#f0ebe0",                              // warm cream
-  textDim: "#a8a294",
-  muted: "#615c52",
-  faint: "#3a3730",
-  up: "#8fb877",                                // sage green
-  down: "#d97757",                              // terracotta
-  amber: "#d4a574",                             // accent / live indicator
-};
-```
+Two themes, implemented as CSS custom properties in `src/styles.css`: `:root` holds the **light** theme (the default) and `:root[data-theme="dark"]` the dark overrides. `src/lib/theme.ts` exports the same tokens as `var(--…)` strings for inline styles; SVG colors (the sparkline) must be applied via `style`, since presentation attributes don't resolve `var()`.
+
+Surfaces, text tiers, and accent adopt **satusd.com's** token values verbatim (its `style.css`) so the two properties read as one site — keep them in sync when adjusting either:
+
+| Token | Light (default) | Dark |
+|---|---|---|
+| `--bg-top` / `--bg-bottom` | `#ffffff` / `#f0eeea` | `#181818` / `#0b0b0b` |
+| `--panel` (tile surface) | `#ffffff` | `#141414` |
+| `--border` | `#e4e0da` | `#242424` |
+| `--text` | `#1a1a1a` | `#f1f1f1` |
+| `--text-dim` | `#55524d` | `#9a9a9a` |
+| `--muted` | `#6b6862` | `#7c7c7c` |
+| `--faint` | `#cdc7be` | `#3c3c3c` |
+| `--up` | `#467a2f` | `#8fb877` (sage) |
+| `--down` | `#ab4e29` | `#d97757` (terracotta) |
+| `--accent` | `#f7931a` | `#f7931a` |
+| `--accent-text` | `#a35f00` | `#f7931a` |
+
+Two accent tokens on purpose, mirroring satusd: full bitcoin orange is only ~2.2:1 on white, so `--accent` is reserved for decorative marks (the LIVE pulsing dot) and `--accent-text` — darkened in light mode — for anything text-sized (the LIVE label). `--up`/`--down` are market-pulse-specific: the sage/terracotta of the original dark design, deepened in light mode to hold ~4.5:1 at text size on the white tile.
+
+**Theme switching:** a toggle in the header eyebrow (it shows the theme it switches *to*: moon while light, sun while dark) flips `data-theme` on `<html>` and persists the choice to `localStorage("theme")` — the same key satusd.com uses, so the preference carries across satusd.com and satusd.com/market-pulse. An inline script in `index.html` resolves the theme before first paint (light unless an explicit saved `"dark"`; OS `prefers-color-scheme` is deliberately ignored, matching satusd) and keeps `<meta name="theme-color">` in sync (`#ffffff` / `#0b0b0b`).
 
 Typography:
 - Display: `"Instrument Serif", serif`, italic, weight 400.
@@ -294,6 +300,8 @@ Within a tick the fetcher rotates proxies and retries once; across ticks the 5-m
 ```
 market-pulse/
 ├── index.html
+├── public/
+│   └── favicon.svg        // shared satusd.com brand mark
 ├── package.json
 ├── tsconfig.json
 ├── vite.config.ts
@@ -304,12 +312,13 @@ market-pulse/
     ├── components/
     │   ├── Tile.tsx
     │   ├── Sparkline.tsx
-    │   └── LiveDot.tsx
+    │   ├── LiveDot.tsx
+    │   └── ThemeToggle.tsx
     ├── lib/
     │   ├── fetchers.ts        // fetchYahoo, fetchBTCSpot, fetchBTCHistory
     │   ├── format.ts          // fmtUSD, fmtPct, fmtChg, fmtTime
-    │   └── theme.ts           // COLORS, fonts
-    └── styles.css             // global resets, font imports, keyframes
+    │   └── theme.ts           // COLORS (var(--…) refs), fonts
+    └── styles.css             // theme tokens, resets, font imports, keyframes
 ```
 
 Keep it flat. No `src/hooks/`, no `src/utils/`, no Redux folder. This is a six-tile dashboard.
@@ -350,7 +359,7 @@ The implementation is done when:
 - Historical charts beyond the sparkline.
 - Push notifications / alerts.
 - Mobile-*first* layout (desktop-first with a responsive collapse is the approach; the two-column sections fold to a single stacked column at ≤640px via CSS — see §5.1 — but no separate mobile design is maintained).
-- Dark/light mode toggle (dark only).
+- OS-preference auto-theming (`prefers-color-scheme`) — the theme is explicit: light default plus a manual toggle, matching satusd.com (see §5.3).
 - I18N / currency conversion.
 
 ---

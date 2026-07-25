@@ -59,6 +59,7 @@ export function Tile({
       style={{
         border: `1px solid ${COLORS.border}`,
         background: COLORS.panel,
+        boxShadow: COLORS.shadowTile,
         borderRadius: 6,
         display: "flex",
         flexDirection: "column",
@@ -86,7 +87,7 @@ export function Tile({
         </div>
         <div
           style={{
-            color: live ? COLORS.amber : COLORS.muted,
+            color: live ? COLORS.accentText : COLORS.muted,
             fontSize: 10,
             letterSpacing: "0.18em",
           }}

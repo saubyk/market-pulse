@@ -50,9 +50,13 @@ Each tile manages its own loading and error state. A failure in one fetch never 
 
 - Centered, max-width 980px
 - 3 categorized sections (Energy & Metals, US Treasuries, Scarce Assets), 2 tiles each
-- Header (clock + date), source/disclaimer footer
+- Header (clock + date + theme toggle), source/disclaimer footer
 - **Responsive:** each section is a two-column grid on desktop that collapses to a single stacked column at ≤640px; page/tile padding tightens and the title scales fluidly (`clamp`) so it reads cleanly down to ~320px. The breakpoint lives in `src/styles.css` (`.tile-grid`, `.app-shell`, `.tile`).
 - Aesthetic target: refined Bloomberg terminal, not crypto-bro dashboard
+
+## Theming
+
+Light by default, dark via the moon/sun toggle in the header. The palette is shared with [satusd.com](https://satusd.com/) — the tokens live as CSS custom properties in `src/styles.css` (`:root` light, `:root[data-theme="dark"]` dark). The choice persists in `localStorage` under the `theme` key, the same one satusd.com uses, so when the dashboard is served at `satusd.com/market-pulse` the preference carries across both pages. An inline script in `index.html` applies the saved theme before first paint to avoid a flash. OS `prefers-color-scheme` is deliberately ignored, matching satusd.com.
 
 ## Deploying as a sub-route
 
