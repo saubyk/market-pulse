@@ -44,11 +44,12 @@ All data sources are free and require no API key. Only Yahoo Finance is reached 
 
 ### 3.1 CORS proxy
 
-No single free proxy is reliable — Yahoo blocks datacenter IPs, so proxies variously 403, throttle, or stall. Define a rotation:
+Yahoo sends no CORS headers, so its requests are proxied. The **primary** is a self-hosted Cloudflare Worker (`worker/` — deploy with `npx wrangler deploy`): pinned to Yahoo's v8 chart endpoint only, CORS `*`, and edge-cached for 120s so any number of visitors produce at most one Yahoo fetch per symbol per TTL per edge location. The free public proxies stay in the rotation as fallback so a fresh clone works with zero deploys:
 
 ```ts
 const PROXIES = [
-  "https://corsproxy.io/?",            // browser-fast, 403s server-side
+  "https://market-pulse-proxy.<subdomain>.workers.dev/?url=", // self-hosted primary
+  "https://corsproxy.io/?",            // free tier is localhost/dev-only since mid-2026; 403s fast in prod
   "https://api.allorigins.win/raw?url=", // valid but slow / occasionally 5xx
   "https://api.codetabs.com/v1/proxy?quest=", // throttled by Yahoo edge
 ];
@@ -56,7 +57,9 @@ const PROXIES = [
 
 Each Yahoo fetch walks the rotation, **validating the parsed JSON inside the loop** (a `200` with a non-Yahoo body falls through to the next proxy), caps each attempt at 8s with an `AbortController`, and retries the whole rotation once after ~700ms. See `fetchYahooOnce` / `fetchYahoo` in `src/lib/fetchers.ts`.
 
-**Known risk:** all three are free public services and can rate-limit or go offline simultaneously. Mitigations and a paid-key alternative are in §9.
+The worker is optional infrastructure, not a dependency: the app must keep working (on the public fallbacks) when the first entry is unreachable, preserving the clone-and-run goal in §1.
+
+**Known risk:** the public fallbacks are free services and can rate-limit or go offline simultaneously — history: all three did in July 2026, which is what motivated the worker. See §9.
 
 ### 3.2 Bitcoin — Coinbase (live, no proxy)
 
@@ -191,7 +194,7 @@ Initial load: fire all fetches in parallel on mount. Don't await anything before
 │  │ ▲ +0.012  +0.28%    │ │ ▲ +0.009  +0.20%    │        │
 │  └─────────────────────┘ └─────────────────────┘        │
 │  ───────────────────────────────────────────            │
-│  SOURCES — YAHOO via corsproxy.io · COINBASE · COINGECKO│
+│  SOURCES — YAHOO (PROXIED) · COINBASE · COINGECKO       │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -286,7 +289,8 @@ Each tile manages its own loading/error state. A failure in one fetch must never
 | Failure | Behavior |
 |---|---|
 | One proxy 403s / 5xx / returns junk | The fetch rotates to the next proxy in the chain (validating JSON per attempt); the tile is unaffected as long as some proxy answers. |
-| Whole rotation fails one tick | Fetcher retries the rotation once (~700ms pause). If it still fails, a tile that has loaded before keeps its last good price (with the original `UPD` timestamp signalling staleness); a tile that has never loaded shows "fetch failed" in red. |
+| Whole rotation fails one tick | Fetcher retries the rotation once (~700ms pause). If it still fails, a tile that has loaded before keeps its last good price (with the original `UPD` timestamp signalling staleness); a tile that has never loaded falls back to the persisted quote from a previous session (below), and only shows "fetch failed" in red if there is none. |
+| Cold load while every proxy is down | Each Yahoo tile's last good quote is persisted to `localStorage` (`mp-lastgood-<key>`) on every successful fetch and hydrated on mount, so a returning visitor sees honestly-stale prices (old `UPD` timestamps) instead of "fetch failed". Only a first-ever visit with all proxies down shows the error state. |
 | CoinGecko rate-limited (429) | BTC tile keeps showing live spot price from Coinbase but sparkline and 24h change stay stale or unavailable. |
 | Coinbase fails | BTC tile shows "fetch failed" until next successful poll. |
 | Network offline | Already-loaded tiles freeze on their last values (timestamps stop advancing); a tile still mid-first-load shows "fetch failed". No popups, no toasts. |
@@ -302,6 +306,9 @@ market-pulse/
 ├── index.html
 ├── public/
 │   └── favicon.svg        // shared satusd.com brand mark
+├── worker/
+│   ├── index.js           // Cloudflare Worker: pinned Yahoo CORS proxy (primary)
+│   └── wrangler.toml
 ├── package.json
 ├── tsconfig.json
 ├── vite.config.ts
@@ -329,7 +336,7 @@ Keep it flat. No `src/hooks/`, no `src/utils/`, no Redux folder. This is a six-t
 
 These are documented for the implementer; they are **not** required in v1.
 
-1. **CORS proxy reliability.** *(Implemented — see §3.1.)* The fetcher rotates a three-proxy chain with per-attempt timeouts, in-loop JSON validation, and a one-shot rotation retry, then degrades to the last good value. Free proxies still fail in correlated bursts, though; the durable fix is a key'd, CORS-native source (see gotcha 2) or a tiny self-hosted proxy.
+1. **CORS proxy reliability.** *(Resolved July 2026 — see §3.1.)* The predicted correlated failure happened: corsproxy.io restricted its free tier to localhost/dev origins while allorigins and codetabs were timing out, taking down all five Yahoo tiles in production. The durable fix implemented: a self-hosted Cloudflare Worker as primary (edge-cached, pinned to Yahoo's chart endpoint), public proxies demoted to fallback, plus `localStorage` persistence of last-good quotes so even a total proxy outage renders stale data on cold loads. Remaining risk: Yahoo blocking Cloudflare's IP ranges — then the fallback is a key'd, CORS-native source (gotcha 2).
 2. **Yahoo unofficial endpoint.** Has no SLA. If Yahoo adds crumb/cookie requirements (as they have in the past for the v7 endpoint), the v8 chart endpoint may also break. Fallback option: Twelve Data free tier (requires a free API key but sends CORS headers natively).
 3. **CoinGecko free tier rate limit.** Polling history once every 5 minutes is well under the limit, but if multiple users open the page in quick succession from the same IP, it can hit the cap. If that becomes an issue, swap to Coinbase historic endpoint: `GET https://api.coinbase.com/v2/prices/BTC-USD/spot?date=YYYY-MM-DD`.
 4. **`^TNX` convention change.** The auto-detection in §3.5 should handle both conventions, but if Yahoo ever reports values in the 15–20 range (unlikely but possible during an extreme bond-market dislocation), the heuristic would mis-fire. Worth a comment in the code.

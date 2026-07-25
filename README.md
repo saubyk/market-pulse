@@ -7,11 +7,11 @@ A zero-config, browser-only dashboard showing six financial instruments organize
 | Category | Instrument | Source | Freshness |
 |---|---|---|---|
 | **Scarce Assets** | Bitcoin (`BTC-USD`) | Coinbase spot + CoinGecko 24h history | **Live** (8s polling) |
-| **Scarce Assets** | Gold (`GC=F`) | Yahoo Finance (via `corsproxy.io`) | ~15 min delayed |
-| **Energy & Metals** | Copper (`HG=F`) | Yahoo Finance (via `corsproxy.io`) | ~15 min delayed |
-| **Energy & Metals** | Brent Crude (`BZ=F`) | Yahoo Finance (via `corsproxy.io`) | ~15 min delayed |
-| **US Treasuries** | US 10Y Yield (`^TNX`) | Yahoo Finance (via `corsproxy.io`) | ~15 min delayed |
-| **US Treasuries** | US 30Y Yield (`^TYX`) | Yahoo Finance (via `corsproxy.io`) | ~15 min delayed |
+| **Scarce Assets** | Gold (`GC=F`) | Yahoo Finance (proxied) | ~15 min delayed |
+| **Energy & Metals** | Copper (`HG=F`) | Yahoo Finance (proxied) | ~15 min delayed |
+| **Energy & Metals** | Brent Crude (`BZ=F`) | Yahoo Finance (proxied) | ~15 min delayed |
+| **US Treasuries** | US 10Y Yield (`^TNX`) | Yahoo Finance (proxied) | ~15 min delayed |
+| **US Treasuries** | US 30Y Yield (`^TYX`) | Yahoo Finance (proxied) | ~15 min delayed |
 
 No backend, no API keys, no auth. Deploys as static files to Netlify, Vercel, GitHub Pages, or Cloudflare Pages.
 
@@ -32,19 +32,23 @@ Copper, Brent crude, Treasury yields (10Y/30Y), and gold come from Yahoo Finance
 
 ## CORS proxy caveat
 
-Yahoo sends no CORS headers and increasingly blocks datacenter IPs, so no single free proxy is reliable: `corsproxy.io` 403s server-side requests, `api.allorigins.win/raw` is valid but often slow (10–20s) or 5xx, and `api.codetabs.com` gets throttled by Yahoo's edge. Resilience therefore comes from layering, not any one proxy:
+Yahoo sends no CORS headers, so its requests must be proxied. The primary proxy is a **self-hosted Cloudflare Worker** (source and one-command deploy in `worker/`): it forwards only Yahoo's v8 chart endpoint, adds CORS headers, and caches responses at the edge for 2 minutes so all visitors share one Yahoo fetch per symbol. The free Workers tier (100k requests/day) is far more than this dashboard can use.
 
-- **Rotation** — each request tries the three proxies in order, validating the JSON *inside* the loop so a proxy that answers `200` with junk (an HTML interstitial, "Edge: Too Many Requests") falls through to the next instead of poisoning the tile.
+The free public proxies remain in the rotation as fallback, so a fresh clone works without deploying anything — but don't count on them alone: `corsproxy.io`'s free tier now serves **only localhost/dev origins** (it 403s in production as of mid-2026), `api.allorigins.win/raw` is valid but often slow (10–20s) or 5xx, and `api.codetabs.com` gets throttled by Yahoo's edge. Resilience comes from layering:
+
+- **Rotation** — each request tries the proxies in order (worker first), validating the JSON *inside* the loop so a proxy that answers `200` with junk (an HTML interstitial, "Edge: Too Many Requests") falls through to the next instead of poisoning the tile.
 - **Per-attempt timeout** — each proxy attempt is capped at 8s (`AbortController`) so one stalled proxy can't hold up the tick.
 - **Retry** — if a full rotation fails, the fetcher pauses ~700ms and runs the rotation once more, which clears most transient single-tick failures.
 
-To change the chain (add more, reorder, or pin to one), edit the `PROXIES` array in `src/lib/fetchers.ts`. The rotation lives in `fetchYahooOnce`; the retry wrapper is `fetchYahoo`.
+**Deploying your own worker** (recommended for forks): `cd worker && npx wrangler deploy` (needs a free Cloudflare account), then replace the first entry of the `PROXIES` array in `src/lib/fetchers.ts` with your worker's URL plus `/?url=`. The rotation lives in `fetchYahooOnce`; the retry wrapper is `fetchYahoo`.
 
 (See `SPEC.md` §9 for other contingencies — Yahoo crumb/cookie requirements, CoinGecko rate limits, etc.)
 
 ## Error handling
 
 Each tile manages its own loading and error state. A failure in one fetch never affects another tile. When a Yahoo tile that has already loaded hits a transient failure, it keeps showing its last good price — the `UPD` timestamp reveals how stale it is — rather than blanking to "fetch failed". Only a tile that has *never* loaded shows the error state. Disconnecting the network keeps the last values frozen (timestamps stop advancing); reconnecting refreshes them on the next successful tick.
+
+The last good quote for each Yahoo tile is also persisted to `localStorage`, so on a cold page load the tiles immediately show the previous session's prices (honestly stale, per their `UPD` timestamps) while the first fetch is in flight — and a visitor only ever sees "fetch failed" if every proxy fails on a browser that has never successfully loaded that tile.
 
 ## Layout
 

@@ -1,11 +1,18 @@
-// Yahoo has no CORS headers and increasingly blocks datacenter IPs, so we
-// fan a request out across several free public proxies in order. None of
-// them is individually reliable — corsproxy.io 403s server-side requests,
-// allorigins can take 20s+ or return 5xx, codetabs gets rate-limited by
-// Yahoo's edge — so resilience comes from rotation + per-attempt timeout
-// + a retry of the whole rotation (see fetchYahoo). Order is browser-fast
-// first, slow-but-usually-valid last.
+// Yahoo has no CORS headers and increasingly blocks datacenter IPs, so
+// every request goes through a proxy rotation with per-attempt timeouts,
+// in-loop payload validation, and a full-rotation retry (see fetchYahoo).
+//
+// The primary is a self-hosted Cloudflare Worker pinned to Yahoo's chart
+// endpoint (source + one-command deploy in worker/): fast, CORS-native,
+// and edge-cached so all visitors share one Yahoo fetch per symbol. The
+// free public proxies stay as fallback — a clone of this repo works
+// without deploying anything, and if the worker is unreachable the
+// rotation degrades to them. Of the public set: corsproxy.io's free tier
+// serves only localhost/dev origins (in production it 403s instantly,
+// which is a cheap fall-through), allorigins is valid but often slow,
+// codetabs gets throttled by Yahoo's edge.
 const PROXIES = [
+  "https://market-pulse-proxy.suheb-khan.workers.dev/?url=",
   "https://corsproxy.io/?",
   "https://api.allorigins.win/raw?url=",
   "https://api.codetabs.com/v1/proxy?quest=",

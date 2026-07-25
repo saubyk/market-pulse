@@ -13,6 +13,8 @@ npm run preview       # serve dist/
 
 There are no tests and no linter; `npm run build` (which runs `tsc -b`) is the correctness check.
 
+The Yahoo CORS proxy worker deploys separately (not part of any CI): `cd worker && npx wrangler deploy`. Test it locally with `npx wrangler dev` (no Cloudflare auth needed).
+
 ## Hard constraints
 
 - **Stay clone-and-run.** `npm install && npm run dev`/`npm run build` must work with no config edits, no API keys, no env vars. The default build must stay root-relative — never set Vite's `base` in `vite.config.ts`. The satusd.com integration is opt-in via `build:satusd` (see Deployment).
@@ -25,6 +27,8 @@ There are no tests and no linter; `npm run build` (which runs `tsc -b`) is the c
 
 There is no deploy step for the standalone flavor: `npm run build` produces a root-relative `dist/` that drops onto any static host (Netlify, Vercel, GitHub Pages, Cloudflare Pages).
 
+The Cloudflare Worker in `worker/` is deployed manually (`npx wrangler deploy`), not by CI — editing `worker/index.js` does nothing in production until someone redeploys it.
+
 ## Architecture
 
 Static SPA, no backend. Six tiles (BTC, Gold, Copper, Brent, 10Y, 30Y) in three sections. All state lives in `src/App.tsx` as one `useState<TileState>` per tile; each tile's fetch loop is fully independent so one failure never touches another tile.
@@ -34,9 +38,9 @@ Static SPA, no backend. Six tiles (BTC, Gold, Copper, Brent, 10Y, 30Y) in three 
 - **Yahoo tiles** (Copper, Brent, 10Y, 30Y, Gold): `useYahooPoll` in `App.tsx` polls every 5 min. Fetch start times are staggered 400ms apart (the `staggerSlot` arg) to stay under the free CORS proxies' per-IP burst limits.
 - **BTC** merges two independent sources: Coinbase spot (direct, CORS-enabled, 8s poll) and CoinGecko 24h history (5 min poll) for the sparkline/change. Either can fail without breaking the other half of the tile.
 
-**Yahoo resilience layering** — Yahoo sends no CORS headers, so requests go through a rotation of three free proxies (`PROXIES` in `fetchers.ts`). `fetchYahooOnce` walks the rotation with an 8s `AbortController` timeout per attempt and validates the parsed JSON *inside* the loop (a proxy can answer 200 with an HTML interstitial); `fetchYahoo` retries the whole rotation once after ~700ms. Any change to fetching must preserve all three layers.
+**Yahoo resilience layering** — Yahoo sends no CORS headers, so requests go through a proxy rotation (`PROXIES` in `fetchers.ts`): a self-hosted Cloudflare Worker first (source in `worker/` — pinned to Yahoo's chart endpoint, CORS `*`, 120s edge cache), then the free public proxies as fallback. The worker is optional infrastructure: the app must keep working on the fallbacks when it's unreachable (this is what preserves clone-and-run). Note corsproxy.io's free tier serves only localhost/dev origins — it works in `npm run dev` but 403s in production. `fetchYahooOnce` walks the rotation with an 8s `AbortController` timeout per attempt and validates the parsed JSON *inside* the loop (a proxy can answer 200 with an HTML interstitial); `fetchYahoo` retries the whole rotation once after ~700ms. Any change to fetching must preserve all these layers.
 
-**Last-good-value behavior**: on a transient failure, a Yahoo tile that has loaded before re-shows its last good quote (kept in a `useRef` in `useYahooPoll`) with its original `UPD` timestamp — it must not blank to "fetch failed". Only a never-loaded tile shows the error state.
+**Last-good-value behavior**: on a transient failure, a Yahoo tile that has loaded before re-shows its last good quote (kept in a `useRef` in `useYahooPoll`) with its original `UPD` timestamp — it must not blank to "fetch failed". Each successful fetch is also persisted to `localStorage` (`mp-lastgood-<key>`) and hydrated on mount, so cold loads show the previous session's stale prices while fetching. The error state is only for a tile with no data from any source, ever.
 
 **`^TNX`/`^TYX` quirk**: Yahoo reports yields either as percent (4.53) or percent×10 (45.3). `parseYahoo` divides price, previousClose, and history by 10 whenever the raw price is > 20. Don't remove this heuristic.
 

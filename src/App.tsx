@@ -21,6 +21,49 @@ const YAHOO_STAGGER_MS = 400;
 
 const INITIAL: TileState = { loading: true };
 
+// Per-tile persistence of the last good Yahoo quote. On a cold load the
+// tile renders the previous session's price immediately — its UPD
+// timestamp honestly signals the staleness — instead of "fetch failed"
+// when every proxy is having a bad tick. Best-effort: private mode or
+// disabled storage just degrades to the in-memory behavior.
+const STORAGE_PREFIX = "mp-lastgood-";
+
+function loadStoredQuote(key: YahooKey): TileState | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_PREFIX + key);
+    if (!raw) return null;
+    const q = JSON.parse(raw);
+    if (typeof q?.price !== "number" || typeof q?.previousClose !== "number") {
+      return null;
+    }
+    return {
+      loading: false,
+      price: q.price,
+      previousClose: q.previousClose,
+      history: Array.isArray(q.history) ? q.history : undefined,
+      lastUpdate: typeof q.lastUpdate === "number" ? q.lastUpdate : undefined,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function saveStoredQuote(key: YahooKey, state: TileState) {
+  try {
+    localStorage.setItem(
+      STORAGE_PREFIX + key,
+      JSON.stringify({
+        price: state.price,
+        previousClose: state.previousClose,
+        history: state.history,
+        lastUpdate: state.lastUpdate,
+      }),
+    );
+  } catch {
+    // storage full or disabled — persistence is best-effort
+  }
+}
+
 function useYahooPoll(
   key: YahooKey,
   setState: (s: TileState) => void,
@@ -36,6 +79,18 @@ function useYahooPoll(
     let cancelled = false;
     let intervalId: ReturnType<typeof setInterval> | undefined;
 
+    // Hydrate from the previous session right away (not staggered) so the
+    // tile shows honestly-stale data, not a spinner, while the first fetch
+    // is pending — and not "fetch failed" if that fetch loses the proxy
+    // lottery.
+    if (lastGood.current == null) {
+      const stored = loadStoredQuote(key);
+      if (stored) {
+        lastGood.current = stored;
+        setState(stored);
+      }
+    }
+
     async function tick() {
       try {
         const q = await fetchYahoo(key);
@@ -48,6 +103,7 @@ function useYahooPoll(
           lastUpdate: q.lastUpdate,
         };
         lastGood.current = next;
+        saveStoredQuote(key, next);
         setState(next);
       } catch {
         if (cancelled) return;
@@ -354,7 +410,7 @@ export default function App() {
           }}
         >
           <div>
-            Sources — Yahoo via corsproxy.io · Coinbase · CoinGecko
+            Sources — Yahoo (proxied) · Coinbase · CoinGecko
           </div>
           <div>Polling: BTC 8s · Yahoo 5m · BTC 24h 5m</div>
         </div>
