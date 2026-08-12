@@ -57,9 +57,9 @@ The last good quote for each Yahoo tile is also persisted to `localStorage`, so 
 ## Layout
 
 - Centered, max-width 980px (stacked); widens to ~1520px on large desktops
-- 4 categorized sections (Scarce Assets, Energy & Metals, US Treasuries, Currencies), 2 tiles each, each framed by a hairline box so category boundaries stay visible in the wide side-by-side layout
+- 4 categorized sections (Scarce Assets, Energy & Metals, US Treasuries, Currencies), 2 tiles each, each framed by a hairline box so category boundaries stay visible
 - Header (clock + date + theme toggle), source/disclaimer footer
-- **Responsive:** each section is a two-column grid that collapses to a single stacked column at ≤640px (page/tile padding tightens, the title scales fluidly with `clamp`, readable down to ~320px). At ≥1240px the four sections flow two-abreast so all eight tiles fit on one screen with no scrolling. Both breakpoints live in `src/styles.css` (`.tile-grid`, `.app-shell`, `.app-frame`, `.section-grid`, `.section-box`, `.tile`).
+- **Responsive:** each section is a two-column grid that collapses to a single stacked column at ≤640px (page/tile padding tightens, the title scales fluidly with `clamp`, readable down to ~320px). Sections stack vertically at every width, so desktop never shows more than two tiles per row. The breakpoint lives in `src/styles.css` (`.tile-grid`, `.app-shell`, `.app-frame`, `.section-box`, `.tile`).
 - Aesthetic target: refined Bloomberg terminal, not crypto-bro dashboard
 
 ## Theming

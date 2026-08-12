@@ -84,19 +84,16 @@ body {
   padding: 48px 24px 60px;
 }
 
-/* Centered content column. Sized so the default stacked layout matches
-   the original ~980px design; on large desktops it widens and the four
-   sections flow two-abreast (below) so all eight tiles fit in one
-   viewport height without scrolling. */
+/* Centered content column, sized to the original ~980px design. Sections
+   always stack vertically, so desktop shows at most two tiles per row. */
 .app-frame {
   width: 100%;
   max-width: 980px;
 }
 
-/* Each category sits in a hairline box so its grouping stays legible —
-   especially in the wide two-abreast layout, where four tiles share a
-   row and the section labels alone don't separate them. Lives in CSS
-   (not inline) because the padding tightens at the mobile breakpoint. */
+/* Each category sits in a hairline box so its grouping stays legible.
+   Lives in CSS (not inline) because the padding tightens at the mobile
+   breakpoint. */
 .section-box {
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -114,29 +111,6 @@ body {
 
 .tile {
   padding: 18px 20px;
-}
-
-/* Wide desktop: pair the sections up two-abreast (Scarce Assets |
-   Energy & Metals, then US Treasuries | Currencies) so the whole
-   dashboard fits without vertical scrolling. */
-@media (min-width: 1240px) {
-  .app-frame {
-    max-width: 1520px;
-  }
-  /* Tightened so the two boxed section rows still clear ~800px-tall
-     viewports without scrolling. */
-  .app-shell {
-    padding-top: 24px;
-    padding-bottom: 24px;
-  }
-  .section-box {
-    margin-bottom: 14px;
-  }
-  .section-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    column-gap: 24px;
-  }
 }
 
 @media (max-width: 640px) {

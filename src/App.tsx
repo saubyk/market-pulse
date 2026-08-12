@@ -327,88 +327,86 @@ export default function App() {
           }}
         />
 
-        <div className="section-grid">
-          <Section title="Scarce Assets">
-            <Tile
-              index={0}
-              ticker="BTC-USD"
-              name="BITCOIN"
-              sublabel="Spot price, Coinbase"
-              pricePrefix="$"
-              priceDecimals={0}
-              changeDecimals={0}
-              live
-              state={btc}
-            />
-            <Tile
-              index={1}
-              ticker="GC=F"
-              name="GOLD"
-              sublabel="Gold futures, $/oz"
-              pricePrefix="$"
-              state={gold}
-            />
-          </Section>
+        <Section title="Scarce Assets">
+          <Tile
+            index={0}
+            ticker="BTC-USD"
+            name="BITCOIN"
+            sublabel="Spot price, Coinbase"
+            pricePrefix="$"
+            priceDecimals={0}
+            changeDecimals={0}
+            live
+            state={btc}
+          />
+          <Tile
+            index={1}
+            ticker="GC=F"
+            name="GOLD"
+            sublabel="Gold futures, $/oz"
+            pricePrefix="$"
+            state={gold}
+          />
+        </Section>
 
-          <Section title="Energy & Metals">
-            <Tile
-              index={2}
-              ticker="HG=F"
-              name="COPPER"
-              sublabel="Copper futures, $/lb"
-              pricePrefix="$"
-              priceDecimals={3}
-              changeDecimals={3}
-              state={copper}
-            />
-            <Tile
-              index={3}
-              ticker="BZ=F"
-              name="BRENT CRUDE"
-              sublabel="North Sea benchmark, $/bbl"
-              pricePrefix="$"
-              state={brent}
-            />
-          </Section>
+        <Section title="Energy & Metals">
+          <Tile
+            index={2}
+            ticker="HG=F"
+            name="COPPER"
+            sublabel="Copper futures, $/lb"
+            pricePrefix="$"
+            priceDecimals={3}
+            changeDecimals={3}
+            state={copper}
+          />
+          <Tile
+            index={3}
+            ticker="BZ=F"
+            name="BRENT CRUDE"
+            sublabel="North Sea benchmark, $/bbl"
+            pricePrefix="$"
+            state={brent}
+          />
+        </Section>
 
-          <Section title="US Treasuries">
-            <Tile
-              index={4}
-              ticker="^TNX"
-              name="US 10Y YIELD"
-              sublabel="10-year Treasury yield, %"
-              priceDecimals={3}
-              changeDecimals={3}
-              state={tnx}
-            />
-            <Tile
-              index={5}
-              ticker="^TYX"
-              name="US 30Y YIELD"
-              sublabel="30-year Treasury yield, %"
-              priceDecimals={3}
-              changeDecimals={3}
-              state={tyx}
-            />
-          </Section>
+        <Section title="US Treasuries">
+          <Tile
+            index={4}
+            ticker="^TNX"
+            name="US 10Y YIELD"
+            sublabel="10-year Treasury yield, %"
+            priceDecimals={3}
+            changeDecimals={3}
+            state={tnx}
+          />
+          <Tile
+            index={5}
+            ticker="^TYX"
+            name="US 30Y YIELD"
+            sublabel="30-year Treasury yield, %"
+            priceDecimals={3}
+            changeDecimals={3}
+            state={tyx}
+          />
+        </Section>
 
-          <Section title="Currencies">
-            <Tile
-              index={6}
-              ticker="JPY=X"
-              name="USD/JPY"
-              sublabel="Yen per US dollar"
-              state={jpy}
-            />
-            <Tile
-              index={7}
-              ticker="DX-Y.NYB"
-              name="DOLLAR INDEX"
-              sublabel="ICE US Dollar Index (DXY)"
-              state={dxy}
-            />
-          </Section>
-        </div>
+        <Section title="Currencies">
+          <Tile
+            index={6}
+            ticker="JPY=X"
+            name="USD/JPY"
+            sublabel="Yen per US dollar"
+            state={jpy}
+          />
+          <Tile
+            index={7}
+            ticker="DX-Y.NYB"
+            name="DOLLAR INDEX"
+            sublabel="ICE US Dollar Index (DXY)"
+            state={dxy}
+          />
+        </Section>
 
         {/* divider */}
         <div
