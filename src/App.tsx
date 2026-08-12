@@ -16,7 +16,7 @@ const POLL_BTC_HISTORY_MS = 5 * 60_000;
 
 // Free CORS proxies (corsproxy.io, allorigins) rate-limit bursts from a
 // single IP. Yahoo fetches are dispatched serially with this gap so all
-// five symbols clear the proxy without 429-ing each other out.
+// seven symbols clear the proxy without 429-ing each other out.
 const YAHOO_STAGGER_MS = 400;
 
 const INITIAL: TileState = { loading: true };
@@ -156,6 +156,8 @@ export default function App() {
   const [tnx, setTnx] = useState<TileState>(INITIAL);
   const [tyx, setTyx] = useState<TileState>(INITIAL);
   const [gold, setGold] = useState<TileState>(INITIAL);
+  const [jpy, setJpy] = useState<TileState>(INITIAL);
+  const [dxy, setDxy] = useState<TileState>(INITIAL);
 
   // BTC has two sources (Coinbase spot + CoinGecko history). Each updates
   // independently and merges into one tile state.
@@ -176,6 +178,8 @@ export default function App() {
   useYahooPoll("tnx", setTnx, 2);
   useYahooPoll("tyx", setTyx, 3);
   useYahooPoll("gold", setGold, 4);
+  useYahooPoll("jpy", setJpy, 5);
+  useYahooPoll("dxy", setDxy, 6);
 
   // BTC spot
   useEffect(() => {
@@ -243,7 +247,7 @@ export default function App() {
         justifyContent: "center",
       }}
     >
-      <div style={{ width: "100%", maxWidth: 980 }}>
+      <div className="app-frame">
         {/* eyebrow */}
         <div
           style={{
@@ -323,69 +327,88 @@ export default function App() {
           }}
         />
 
-        <Section title="Scarce Assets">
-          <Tile
-            index={0}
-            ticker="BTC-USD"
-            name="BITCOIN"
-            sublabel="Spot price, Coinbase"
-            pricePrefix="$"
-            priceDecimals={0}
-            changeDecimals={0}
-            live
-            state={btc}
-          />
-          <Tile
-            index={1}
-            ticker="GC=F"
-            name="GOLD"
-            sublabel="Gold futures, $/oz"
-            pricePrefix="$"
-            state={gold}
-          />
-        </Section>
+        <div className="section-grid">
+          <Section title="Scarce Assets">
+            <Tile
+              index={0}
+              ticker="BTC-USD"
+              name="BITCOIN"
+              sublabel="Spot price, Coinbase"
+              pricePrefix="$"
+              priceDecimals={0}
+              changeDecimals={0}
+              live
+              state={btc}
+            />
+            <Tile
+              index={1}
+              ticker="GC=F"
+              name="GOLD"
+              sublabel="Gold futures, $/oz"
+              pricePrefix="$"
+              state={gold}
+            />
+          </Section>
 
-        <Section title="Energy & Metals">
-          <Tile
-            index={2}
-            ticker="HG=F"
-            name="COPPER"
-            sublabel="Copper futures, $/lb"
-            pricePrefix="$"
-            priceDecimals={3}
-            changeDecimals={3}
-            state={copper}
-          />
-          <Tile
-            index={3}
-            ticker="BZ=F"
-            name="BRENT CRUDE"
-            sublabel="North Sea benchmark, $/bbl"
-            pricePrefix="$"
-            state={brent}
-          />
-        </Section>
+          <Section title="Energy & Metals">
+            <Tile
+              index={2}
+              ticker="HG=F"
+              name="COPPER"
+              sublabel="Copper futures, $/lb"
+              pricePrefix="$"
+              priceDecimals={3}
+              changeDecimals={3}
+              state={copper}
+            />
+            <Tile
+              index={3}
+              ticker="BZ=F"
+              name="BRENT CRUDE"
+              sublabel="North Sea benchmark, $/bbl"
+              pricePrefix="$"
+              state={brent}
+            />
+          </Section>
 
-        <Section title="US Treasuries">
-          <Tile
-            index={4}
-            ticker="^TNX"
-            name="US 10Y YIELD"
-            sublabel="10-year Treasury yield, %"
-            priceDecimals={3}
-            changeDecimals={3}
-            state={tnx}
-          />
-          <Tile
-            index={5}
-            ticker="^TYX"
-            name="US 30Y YIELD"
-            sublabel="30-year Treasury yield, %"
-            priceDecimals={3}
-            changeDecimals={3}
-            state={tyx}
-          />
-        </Section>
+          <Section title="US Treasuries">
+            <Tile
+              index={4}
+              ticker="^TNX"
+              name="US 10Y YIELD"
+              sublabel="10-year Treasury yield, %"
+              priceDecimals={3}
+              changeDecimals={3}
+              state={tnx}
+            />
+            <Tile
+              index={5}
+              ticker="^TYX"
+              name="US 30Y YIELD"
+              sublabel="30-year Treasury yield, %"
+              priceDecimals={3}
+              changeDecimals={3}
+              state={tyx}
+            />
+          </Section>
+
+          <Section title="Currencies">
+            <Tile
+              index={6}
+              ticker="JPY=X"
+              name="USD/JPY"
+              sublabel="Yen per US dollar"
+              state={jpy}
+            />
+            <Tile
+              index={7}
+              ticker="DX-Y.NYB"
+              name="DOLLAR INDEX"
+              sublabel="ICE US Dollar Index (DXY)"
+              state={dxy}
+            />
+          </Section>
+        </div>
 
         {/* divider */}
         <div

@@ -84,6 +84,15 @@ body {
   padding: 48px 24px 60px;
 }
 
+/* Centered content column. Sized so the default stacked layout matches
+   the original ~980px design; on large desktops it widens and the four
+   sections flow two-abreast (below) so all eight tiles fit in one
+   viewport height without scrolling. */
+.app-frame {
+  width: 100%;
+  max-width: 980px;
+}
+
 /* Each section's tile grid: two columns on desktop, a single stacked
    column once the viewport is too narrow for two readable tiles. */
 .tile-grid {
@@ -94,6 +103,24 @@ body {
 
 .tile {
   padding: 18px 20px;
+}
+
+/* Wide desktop: pair the sections up two-abreast (Scarce Assets |
+   Energy & Metals, then US Treasuries | Currencies) so the whole
+   dashboard fits without vertical scrolling. */
+@media (min-width: 1240px) {
+  .app-frame {
+    max-width: 1520px;
+  }
+  .app-shell {
+    padding-top: 36px;
+    padding-bottom: 36px;
+  }
+  .section-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    column-gap: 24px;
+  }
 }
 
 @media (max-width: 640px) {

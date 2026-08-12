@@ -1,6 +1,6 @@
 # Market Pulse
 
-A zero-config, browser-only dashboard showing six financial instruments organized into three categories:
+A zero-config, browser-only dashboard showing eight financial instruments organized into four categories:
 
 ![Market Pulse dashboard](docs/screenshot.png)
 
@@ -12,6 +12,8 @@ A zero-config, browser-only dashboard showing six financial instruments organize
 | **Energy & Metals** | Brent Crude (`BZ=F`) | Yahoo Finance (proxied) | ~15 min delayed |
 | **US Treasuries** | US 10Y Yield (`^TNX`) | Yahoo Finance (proxied) | ~15 min delayed |
 | **US Treasuries** | US 30Y Yield (`^TYX`) | Yahoo Finance (proxied) | ~15 min delayed |
+| **Currencies** | USD/JPY (`JPY=X`) | Yahoo Finance (proxied) | ~15 min delayed |
+| **Currencies** | US Dollar Index (`DX-Y.NYB`) | Yahoo Finance (proxied) | ~15 min delayed |
 
 No backend, no API keys, no auth. Deploys as static files to Netlify, Vercel, GitHub Pages, or Cloudflare Pages.
 
@@ -28,7 +30,7 @@ npm run preview  # serve dist/
 
 Bitcoin is fetched directly from Coinbase's public spot endpoint (CORS-enabled) and refreshes every 8 seconds. The 24-hour reference price and sparkline for BTC come from CoinGecko, refreshed every 5 minutes.
 
-Copper, Brent crude, Treasury yields (10Y/30Y), and gold come from Yahoo Finance's unofficial chart endpoint. Yahoo does not send `Access-Control-Allow-Origin`, so the request is proxied. The data is 15-minute delayed, so each symbol is polled every 5 minutes and the five fetches are staggered ~400ms apart to stay under the free proxies' per-IP burst limits.
+Copper, Brent crude, Treasury yields (10Y/30Y), gold, USD/JPY, and the US Dollar Index come from Yahoo Finance's unofficial chart endpoint. Yahoo does not send `Access-Control-Allow-Origin`, so the request is proxied. The data is 15-minute delayed, so each symbol is polled every 5 minutes and the seven fetches are staggered ~400ms apart to stay under the free proxies' per-IP burst limits.
 
 ## CORS proxy caveat
 
@@ -54,10 +56,10 @@ The last good quote for each Yahoo tile is also persisted to `localStorage`, so 
 
 ## Layout
 
-- Centered, max-width 980px
-- 3 categorized sections (Energy & Metals, US Treasuries, Scarce Assets), 2 tiles each
+- Centered, max-width 980px (stacked); widens to ~1520px on large desktops
+- 4 categorized sections (Scarce Assets, Energy & Metals, US Treasuries, Currencies), 2 tiles each
 - Header (clock + date + theme toggle), source/disclaimer footer
-- **Responsive:** each section is a two-column grid on desktop that collapses to a single stacked column at ≤640px; page/tile padding tightens and the title scales fluidly (`clamp`) so it reads cleanly down to ~320px. The breakpoint lives in `src/styles.css` (`.tile-grid`, `.app-shell`, `.tile`).
+- **Responsive:** each section is a two-column grid that collapses to a single stacked column at ≤640px (page/tile padding tightens, the title scales fluidly with `clamp`, readable down to ~320px). At ≥1240px the four sections flow two-abreast so all eight tiles fit on one screen with no scrolling. Both breakpoints live in `src/styles.css` (`.tile-grid`, `.app-shell`, `.app-frame`, `.section-grid`, `.tile`).
 - Aesthetic target: refined Bloomberg terminal, not crypto-bro dashboard
 
 ## Theming

@@ -36,7 +36,14 @@ async function fetchWithTimeout(url: string): Promise<Response> {
   }
 }
 
-export type YahooKey = "copper" | "brent" | "tnx" | "tyx" | "gold";
+export type YahooKey =
+  | "copper"
+  | "brent"
+  | "tnx"
+  | "tyx"
+  | "gold"
+  | "jpy"
+  | "dxy";
 
 const YAHOO_SYMBOL: Record<YahooKey, string> = {
   copper: "HG=F",
@@ -44,6 +51,8 @@ const YAHOO_SYMBOL: Record<YahooKey, string> = {
   tnx: "^TNX",
   tyx: "^TYX",
   gold: "GC=F",
+  jpy: "JPY=X",
+  dxy: "DX-Y.NYB",
 };
 
 const YIELD_KEYS = new Set<YahooKey>(["tnx", "tyx"]);

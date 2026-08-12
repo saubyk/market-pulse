@@ -1,13 +1,13 @@
 # Market Pulse — Specification
 
-A minimal, browser-only dashboard that displays financial instruments side-by-side across three categories — **Energy & Metals** (Copper, Brent crude), **US Treasuries** (10Y, 30Y yields), and **Scarce Assets** (Bitcoin, Gold). Designed to run entirely as a static SPA — no backend, no API keys, no auth.
+A minimal, browser-only dashboard that displays financial instruments side-by-side across four categories — **Energy & Metals** (Copper, Brent crude), **US Treasuries** (10Y, 30Y yields), **Scarce Assets** (Bitcoin, Gold), and **Currencies** (USD/JPY, US Dollar Index). Designed to run entirely as a static SPA — no backend, no API keys, no auth.
 
 ---
 
 ## 1. Goals & Non-Goals
 
 ### Goals
-- Single-page dashboard showing live or near-live prices for the six instruments above.
+- Single-page dashboard showing live or near-live prices for the eight instruments above.
 - Zero-config setup: clone, install, run. No API keys, no server.
 - Honest about data freshness: live where possible, clearly labeled as delayed otherwise.
 - Robust to API hiccups: a failed tile must not break the others.
@@ -27,7 +27,7 @@ A minimal, browser-only dashboard that displays financial instruments side-by-si
 | Layer | Choice | Reason |
 |---|---|---|
 | Build tool | **Vite** | Fastest cold start, simple static output. |
-| Framework | **React 18 + TypeScript** | Component model fits the six-tile layout; TS catches the kinds of bugs that show up in API parsing. |
+| Framework | **React 18 + TypeScript** | Component model fits the eight-tile layout; TS catches the kinds of bugs that show up in API parsing. |
 | Styling | **Plain CSS or inline styles** | The design is custom and small; a utility framework is overkill. Tailwind is acceptable if the implementer prefers it. |
 | State | **`useState` + `useEffect`** | No global state needed. |
 | Charts | **Hand-rolled SVG** | One small sparkline component, ~30 lines. No chart library dependency. |
@@ -91,7 +91,7 @@ Use `prices[0][1]` as the 24h-ago reference for computing change. Use the full a
 
 **Rate limit:** ~10–30 req/min on the free tier. Polling this once every 5 minutes keeps usage trivial.
 
-### 3.4 Copper, Brent, Treasuries, Gold — Yahoo Finance (15-min delayed, via proxy)
+### 3.4 Copper, Brent, Treasuries, Gold, FX — Yahoo Finance (15-min delayed, via proxy)
 
 **Endpoint pattern:**
 ```
@@ -105,6 +105,8 @@ GET https://query1.finance.yahoo.com/v8/finance/chart/{SYMBOL}?interval=1d&range
 | US 10-Year Treasury Yield | `^TNX` |
 | US 30-Year Treasury Yield | `^TYX` |
 | Gold | `GC=F` |
+| USD/JPY exchange rate | `JPY=X` |
+| US Dollar Index (DXY) | `DX-Y.NYB` |
 
 **Response shape (abridged):**
 ```json
@@ -156,7 +158,7 @@ const divisor = key === "tnx" && raw.price > 20 ? 10 : 1;
 |---|---|---|---|
 | BTC spot | Coinbase | **8 seconds** | True real-time feel. |
 | BTC 24h history | CoinGecko | **5 minutes** | Reference for change/sparkline; doesn't need to be fresh. |
-| Copper / Brent / 10Y / 30Y / Gold | Yahoo (proxied) | **5 minutes**, staggered ~400ms apart | Data is 15-min delayed anyway; polling faster adds nothing. The stagger keeps the five symbol fetches under the free proxies' per-IP burst threshold. |
+| Copper / Brent / 10Y / 30Y / Gold / USD-JPY / DXY | Yahoo (proxied) | **5 minutes**, staggered ~400ms apart | Data is 15-min delayed anyway; polling faster adds nothing. The stagger keeps the seven symbol fetches under the free proxies' per-IP burst threshold. |
 | Clock display | local | **1 second** | UI only. |
 
 All polling uses `setInterval` inside `useEffect`, with proper cleanup on unmount and a `cancel` flag to prevent stale `setState` calls from late responses.
@@ -193,15 +195,21 @@ Initial load: fire all fetches in parallel on mount. Don't await anything before
 │  │ 4.234               │ │ 4.512               │        │
 │  │ ▲ +0.012  +0.28%    │ │ ▲ +0.009  +0.20%    │        │
 │  └─────────────────────┘ └─────────────────────┘        │
+│  CURRENCIES                                             │
+│  ┌─────────────────────┐ ┌─────────────────────┐        │
+│  │ JPY=X · USD/JPY     │ │ DX-Y.NYB · DOLLAR…  │        │
+│  │ 159.46              │ │ 99.88               │        │
+│  │ ▼ -0.52  -0.33%     │ │ ▼ -0.21  -0.21%     │        │
+│  └─────────────────────┘ └─────────────────────┘        │
 │  ───────────────────────────────────────────            │
 │  SOURCES — YAHOO (PROXIED) · COINBASE · COINGECKO       │
 └─────────────────────────────────────────────────────────┘
 ```
 
-- Centered container, max-width ~980px.
-- Three labeled sections (Scarce Assets, Energy & Metals, US Treasuries), each a two-column grid of 2 tiles, gap ~14px.
+- Centered container, max-width ~980px (stacked layout).
+- Four labeled sections (Scarce Assets, Energy & Metals, US Treasuries, Currencies), each a two-column grid of 2 tiles, gap ~14px.
 - Header above, source footer below.
-- **Responsive:** at ≤640px the grids collapse to a single column, page/tile padding tightens, and the title font scales with `clamp()`. Implemented as CSS classes (`.tile-grid`, `.app-shell`, `.tile`) in `styles.css` rather than inline styles, since inline styles outrank media queries. Header eyebrow / title / source rows use `flex-wrap` to fold gracefully.
+- **Responsive:** at ≤640px the grids collapse to a single column, page/tile padding tightens, and the title font scales with `clamp()`. At ≥1240px the container widens (max ~1520px) and the four sections flow **two-abreast** (`.section-grid` becomes a 2×2 grid: Scarce Assets | Energy & Metals, then US Treasuries | Currencies) so all eight tiles fit in one viewport height with no vertical scrolling on typical desktops (verified at 1440×900 and 1920×1080; sub-800px-tall laptops may still scroll slightly). Both breakpoints are implemented as CSS classes (`.tile-grid`, `.app-shell`, `.app-frame`, `.section-grid`, `.tile`) in `styles.css` rather than inline styles, since inline styles outrank media queries. Header eyebrow / title / source rows use `flex-wrap` to fold gracefully.
 
 ### 5.2 Tile contents (each tile)
 
@@ -276,6 +284,8 @@ type DashboardState = {
   tnx: Tile;
   tyx: Tile;
   gold: Tile;
+  jpy: Tile;
+  dxy: Tile;
   btc: Tile;
 };
 ```
@@ -328,7 +338,7 @@ market-pulse/
     └── styles.css             // theme tokens, resets, font imports, keyframes
 ```
 
-Keep it flat. No `src/hooks/`, no `src/utils/`, no Redux folder. This is a six-tile dashboard.
+Keep it flat. No `src/hooks/`, no `src/utils/`, no Redux folder. This is an eight-tile dashboard.
 
 ---
 
@@ -348,10 +358,10 @@ These are documented for the implementer; they are **not** required in v1.
 The implementation is done when:
 
 - [ ] Running `npm install && npm run dev` opens a working dashboard with no console errors.
-- [ ] All six tiles render a current price within 10 seconds of page load on a normal connection.
+- [ ] All eight tiles render a current price within 10 seconds of page load on a normal connection.
 - [ ] BTC price updates visibly within ~8 seconds of a real price move on Coinbase.
 - [ ] The 10Y yield tile shows a value between roughly 3 and 6 (i.e. as a percent, not as percent × 10).
-- [ ] Killing the network (DevTools offline) within 60 seconds causes the five Yahoo-backed tiles (Copper, Brent, 10Y, 30Y, Gold) to show "fetch failed" and BTC to follow within 8 seconds. Restoring the network restores all tiles within one polling interval.
+- [ ] Killing the network (DevTools offline) within 60 seconds causes the seven Yahoo-backed tiles (Copper, Brent, 10Y, 30Y, Gold, USD/JPY, DXY) to show "fetch failed" and BTC to follow within 8 seconds. Restoring the network restores all tiles within one polling interval.
 - [ ] `npm run build` produces a static bundle deployable to any static host.
 - [ ] The README explains: what it does, what's live vs delayed, the CORS-proxy caveat, and how to run it.
 
