@@ -133,7 +133,7 @@ function Section({
   children: ReactNode;
 }) {
   return (
-    <section style={{ marginBottom: 18 }}>
+    <section className="section-box">
       <div
         style={{
           fontSize: 10,

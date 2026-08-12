@@ -207,9 +207,9 @@ Initial load: fire all fetches in parallel on mount. Don't await anything before
 ```
 
 - Centered container, max-width ~980px (stacked layout).
-- Four labeled sections (Scarce Assets, Energy & Metals, US Treasuries, Currencies), each a two-column grid of 2 tiles, gap ~14px.
+- Four labeled sections (Scarce Assets, Energy & Metals, US Treasuries, Currencies), each a two-column grid of 2 tiles, gap ~14px. Each section sits in a hairline box (`.section-box`: 1px `--border`, radius 8, ~12–14px padding, label inside) so category boundaries stay legible even when sections share a row in the wide layout.
 - Header above, source footer below.
-- **Responsive:** at ≤640px the grids collapse to a single column, page/tile padding tightens, and the title font scales with `clamp()`. At ≥1240px the container widens (max ~1520px) and the four sections flow **two-abreast** (`.section-grid` becomes a 2×2 grid: Scarce Assets | Energy & Metals, then US Treasuries | Currencies) so all eight tiles fit in one viewport height with no vertical scrolling on typical desktops (verified at 1440×900 and 1920×1080; sub-800px-tall laptops may still scroll slightly). Both breakpoints are implemented as CSS classes (`.tile-grid`, `.app-shell`, `.app-frame`, `.section-grid`, `.tile`) in `styles.css` rather than inline styles, since inline styles outrank media queries. Header eyebrow / title / source rows use `flex-wrap` to fold gracefully.
+- **Responsive:** at ≤640px the grids collapse to a single column, page/tile padding tightens, and the title font scales with `clamp()`. At ≥1240px the container widens (max ~1520px) and the four sections flow **two-abreast** (`.section-grid` becomes a 2×2 grid: Scarce Assets | Energy & Metals, then US Treasuries | Currencies) so all eight tiles fit in one viewport height with no vertical scrolling on typical desktops (verified at 1440×900 and 1920×1080; sub-800px-tall laptops may still scroll slightly). Both breakpoints are implemented as CSS classes (`.tile-grid`, `.app-shell`, `.app-frame`, `.section-grid`, `.section-box`, `.tile`) in `styles.css` rather than inline styles, since inline styles outrank media queries. Header eyebrow / title / source rows use `flex-wrap` to fold gracefully.
 
 ### 5.2 Tile contents (each tile)
 

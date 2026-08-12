@@ -93,6 +93,17 @@ body {
   max-width: 980px;
 }
 
+/* Each category sits in a hairline box so its grouping stays legible —
+   especially in the wide two-abreast layout, where four tiles share a
+   row and the section labels alone don't separate them. Lives in CSS
+   (not inline) because the padding tightens at the mobile breakpoint. */
+.section-box {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px 14px;
+  margin-bottom: 18px;
+}
+
 /* Each section's tile grid: two columns on desktop, a single stacked
    column once the viewport is too narrow for two readable tiles. */
 .tile-grid {
@@ -112,9 +123,14 @@ body {
   .app-frame {
     max-width: 1520px;
   }
+  /* Tightened so the two boxed section rows still clear ~800px-tall
+     viewports without scrolling. */
   .app-shell {
-    padding-top: 36px;
-    padding-bottom: 36px;
+    padding-top: 24px;
+    padding-bottom: 24px;
+  }
+  .section-box {
+    margin-bottom: 14px;
   }
   .section-grid {
     display: grid;
@@ -126,6 +142,10 @@ body {
 @media (max-width: 640px) {
   .app-shell {
     padding: 28px 14px 40px;
+  }
+  /* Reclaim horizontal room for the tiles on narrow phones. */
+  .section-box {
+    padding: 10px;
   }
   .tile-grid {
     grid-template-columns: 1fr;
