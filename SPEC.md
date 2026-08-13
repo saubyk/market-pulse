@@ -207,17 +207,16 @@ Initial load: fire all fetches in parallel on mount. Don't await anything before
 ```
 
 - Centered container, max-width ~980px (stacked layout).
-- Four labeled sections (Scarce Assets, Energy & Metals, US Treasuries, Currencies), each a two-column grid of 2 tiles, gap ~14px. Each section sits in a hairline box (`.section-box`: 1px `--border`, radius 8, ~12–14px padding, label inside) so category boundaries stay legible even when sections share a row in the wide layout.
+- Four labeled sections (Scarce Assets, Energy & Metals, US Treasuries, Currencies), each a two-column grid of 2 tiles, gap ~12px. Sections are unboxed — just the uppercase label above the tile grid. Vertical spacing throughout (page padding, header/footer margins, tile internals) is deliberately compact so all eight tiles fit one desktop viewport height (~755px or taller) with no vertical scrolling.
 - Header above, source footer below.
-- **Responsive:** at ≤640px the grids collapse to a single column, page/tile padding tightens, and the title font scales with `clamp()`. Sections always stack vertically in a ~980px column, so desktop shows at most two tiles per row (there is deliberately no wider multi-section-per-row layout). The breakpoint is implemented as CSS classes (`.tile-grid`, `.app-shell`, `.app-frame`, `.section-box`, `.tile`) in `styles.css` rather than inline styles, since inline styles outrank media queries. Header eyebrow / title / source rows use `flex-wrap` to fold gracefully.
+- **Responsive:** at ≤640px the grids collapse to a single column, page/tile padding tightens, and the title font scales with `clamp()`. Sections always stack vertically in a ~980px column, so desktop shows at most two tiles per row (there is deliberately no wider multi-section-per-row layout). The breakpoint is implemented as CSS classes (`.tile-grid`, `.app-shell`, `.app-frame`, `.tile`) in `styles.css` rather than inline styles, since inline styles outrank media queries. Header eyebrow / title / source rows use `flex-wrap` to fold gracefully.
 
 ### 5.2 Tile contents (each tile)
 
-1. **Top row:** ticker label (e.g. `HG=F · COPPER`) on the left, freshness tag on the right (`LIVE` with pulsing dot for BTC, `DLY 15m` muted for others).
+1. **Top row:** ticker label (e.g. `HG=F · COPPER`) on the left; on the right the freshness tag (`LIVE` with pulsing dot for BTC, `DLY 15m` muted for others) followed by a muted `· UPD HH:MM:SS` timestamp of the last successful fetch (omitted until first data arrives).
 2. **Sublabel:** small italic serif description, e.g. "Copper futures, $/lb".
 3. **Price:** large monospace, light weight (~300), with currency prefix.
 4. **Change row:** arrow + absolute change + percent change, colored green/red. Sparkline aligned to the right of this row.
-5. **Footer:** small "UPD HH:MM:SS" timestamp showing last successful fetch.
 
 ### 5.3 Design tokens & theming
 

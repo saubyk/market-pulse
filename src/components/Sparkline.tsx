@@ -7,7 +7,7 @@ type Props = {
   height?: number;
 };
 
-export function Sparkline({ data, color, width = 140, height = 36 }: Props) {
+export function Sparkline({ data, color, width = 140, height = 26 }: Props) {
   const gradId = useId();
 
   if (data.length < 2) {

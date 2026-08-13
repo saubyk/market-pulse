@@ -133,14 +133,14 @@ function Section({
   children: ReactNode;
 }) {
   return (
-    <section className="section-box">
+    <section style={{ marginBottom: 6 }}>
       <div
         style={{
           fontSize: 10,
           letterSpacing: "0.28em",
           color: COLORS.muted,
           textTransform: "uppercase",
-          marginBottom: 8,
+          marginBottom: 4,
         }}
       >
         {title}
@@ -285,7 +285,7 @@ export default function App() {
             alignItems: "flex-end",
             justifyContent: "space-between",
             flexWrap: "wrap",
-            margin: "2px 0 22px",
+            margin: "2px 0 12px",
             gap: "8px 24px",
           }}
         >
@@ -294,7 +294,7 @@ export default function App() {
               fontFamily: FONTS.display,
               fontStyle: "italic",
               fontWeight: 400,
-              fontSize: "clamp(32px, 9vw, 46px)",
+              fontSize: "clamp(30px, 8vw, 40px)",
               margin: 0,
               color: COLORS.text,
               lineHeight: 1,
@@ -308,7 +308,7 @@ export default function App() {
               fontSize: 12,
               letterSpacing: "0.16em",
               color: COLORS.textDim,
-              lineHeight: 1.5,
+              lineHeight: 1.3,
             }}
           >
             <div>{fmtDate(now)}</div>
@@ -323,7 +323,7 @@ export default function App() {
           style={{
             height: 1,
             background: COLORS.border,
-            margin: "0 0 18px",
+            margin: "0 0 12px",
           }}
         />
 
@@ -413,7 +413,7 @@ export default function App() {
           style={{
             height: 1,
             background: COLORS.border,
-            margin: "22px 0 12px",
+            margin: "4px 0 10px",
           }}
         />
 
@@ -439,13 +439,12 @@ export default function App() {
         {/* disclaimer */}
         <div
           style={{
-            marginTop: 18,
+            marginTop: 6,
             fontFamily: FONTS.display,
             fontStyle: "italic",
-            fontSize: 12,
-            lineHeight: 1.5,
+            fontSize: 11,
+            lineHeight: 1.45,
             color: COLORS.textDim,
-            maxWidth: 720,
           }}
         >
           Not investment advice. Prices are delayed by at least 15 minutes for

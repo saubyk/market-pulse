@@ -63,19 +63,20 @@ export function Tile({
         borderRadius: 6,
         display: "flex",
         flexDirection: "column",
-        gap: 10,
-        minHeight: 168,
+        gap: 4,
         opacity: 0,
         animation: "fadeUp 0.6s ease-out forwards",
         animationDelay: `${index * 0.08}s`,
       }}
     >
-      {/* top row: ticker + freshness */}
+      {/* top row: ticker + freshness/updated */}
       <div
         style={{
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
+          flexWrap: "wrap",
+          gap: "2px 10px",
           fontSize: 11,
           letterSpacing: "0.12em",
         }}
@@ -100,6 +101,12 @@ export function Tile({
           ) : (
             "DLY 15m"
           )}
+          {lastUpdate ? (
+            <span style={{ color: COLORS.muted }}>
+              {" · UPD "}
+              {fmtTime(lastUpdate)}
+            </span>
+          ) : null}
         </div>
       </div>
 
@@ -108,7 +115,8 @@ export function Tile({
         style={{
           fontFamily: FONTS.display,
           fontStyle: "italic",
-          fontSize: 14,
+          fontSize: 13,
+          lineHeight: 1.25,
           color: COLORS.textDim,
         }}
       >
@@ -118,13 +126,12 @@ export function Tile({
       {/* price */}
       <div
         style={{
-          fontSize: 38,
+          fontSize: 30,
           fontWeight: 300,
           letterSpacing: "-0.01em",
           color: error ? COLORS.down : COLORS.text,
           lineHeight: 1.05,
-          marginTop: 2,
-          minHeight: 42,
+          minHeight: 32,
         }}
       >
         {error ? "fetch failed" : loading || priceStr == null ? "…" : priceStr}
@@ -157,21 +164,9 @@ export function Tile({
           {history && history.length >= 2 ? (
             <Sparkline data={history} color={changeColor} />
           ) : (
-            <div style={{ width: 140, height: 36 }} />
+            <div style={{ width: 140, height: 26 }} />
           )}
         </div>
-      </div>
-
-      {/* footer timestamp */}
-      <div
-        style={{
-          fontSize: 10,
-          color: COLORS.muted,
-          letterSpacing: "0.16em",
-          marginTop: 2,
-        }}
-      >
-        {lastUpdate ? `UPD ${fmtTime(lastUpdate)}` : " "}
       </div>
     </div>
   );
