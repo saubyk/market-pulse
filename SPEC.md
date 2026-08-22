@@ -1,6 +1,6 @@
 # Market Pulse — Specification
 
-A minimal, browser-only dashboard that displays financial instruments side-by-side across four categories — **Energy & Metals** (Copper, Brent crude), **US Treasuries** (10Y, 30Y yields), **Scarce Assets** (Bitcoin, Gold), and **Currencies** (USD/JPY, US Dollar Index). Designed to run entirely as a static SPA — no backend, no API keys, no auth.
+A minimal, browser-only dashboard that displays financial instruments side-by-side across four categories — **Energy & Metals** (Copper, Brent crude), **US Treasuries** (10Y, 30Y yields), **Scarce Assets** (Bitcoin, Gold), and **Currencies** (USD/JPY, US Dollar Index). The dollar-priced instruments can be displayed in USD (default), CAD or INR. Designed to run entirely as a static SPA — no backend, no API keys, no auth.
 
 ---
 
@@ -11,6 +11,7 @@ A minimal, browser-only dashboard that displays financial instruments side-by-si
 - Zero-config setup: clone, install, run. No API keys, no server.
 - Honest about data freshness: live where possible, clearly labeled as delayed otherwise.
 - Robust to API hiccups: a failed tile must not break the others.
+- Optional display of the dollar-priced instruments in CAD or INR, converted at a live-fetched rate that the UI discloses.
 - Deployable as static files to Netlify, Vercel, GitHub Pages, or Cloudflare Pages.
 
 ### Non-Goals
@@ -107,6 +108,10 @@ GET https://query1.finance.yahoo.com/v8/finance/chart/{SYMBOL}?interval=1d&range
 | Gold | `GC=F` |
 | USD/JPY exchange rate | `JPY=X` |
 | US Dollar Index (DXY) | `DX-Y.NYB` |
+| USD/CAD rate — currency picker, not a tile | `CAD=X` |
+| USD/INR rate — currency picker, not a tile | `INR=X` |
+
+The last two back the currency picker (§5.6) rather than a tile. They are fetched only while that currency is selected, through the same rotation/retry/last-good machinery as the tiles, so USD — the base — costs no request at all.
 
 **Response shape (abridged):**
 ```json
@@ -158,7 +163,8 @@ const divisor = key === "tnx" && raw.price > 20 ? 10 : 1;
 |---|---|---|---|
 | BTC spot | Coinbase | **8 seconds** | True real-time feel. |
 | BTC 24h history | CoinGecko | **5 minutes** | Reference for change/sparkline; doesn't need to be fresh. |
-| Copper / Brent / 10Y / 30Y / Gold / USD-JPY / DXY | Yahoo (proxied) | **5 minutes**, staggered ~400ms apart | Data is 15-min delayed anyway; polling faster adds nothing. The stagger keeps the seven symbol fetches under the free proxies' per-IP burst threshold. |
+| Copper / Brent / 10Y / 30Y / Gold / USD-JPY / DXY | Yahoo (proxied) | **5 minutes**, staggered ~400ms apart | Data is 15-min delayed anyway; polling faster adds nothing. The stagger keeps the symbol fetches under the free proxies' per-IP burst threshold. |
+| Selected currency's USD rate (`CAD=X` / `INR=X`) | Yahoo (proxied) | **5 minutes**, stagger slot 8 | Only while a non-USD currency is selected; USD is the base and fetches nothing. Never more than one rate in flight. |
 | Clock display | local | **1 second** | UI only. |
 
 All polling uses `setInterval` inside `useEffect`, with proper cleanup on unmount and a `cancel` flag to prevent stale `setState` calls from late responses.
@@ -208,13 +214,13 @@ Initial load: fire all fetches in parallel on mount. Don't await anything before
 
 - Centered container, max-width ~980px (stacked layout).
 - Four labeled sections (Scarce Assets, Energy & Metals, US Treasuries, Currencies), each a two-column grid of 2 tiles, gap ~12px. Sections are unboxed — just the uppercase label above the tile grid. Vertical spacing throughout (page padding, header/footer margins, tile internals) is deliberately compact so all eight tiles fit one desktop viewport height (~755px or taller) with no vertical scrolling.
-- Header above, source footer below.
+- Header above, source footer below. The eyebrow row carries the satusd.com link, the currency picker (§5.6) and the theme toggle, so neither control costs vertical space.
 - **Responsive:** at ≤640px the grids collapse to a single column, page/tile padding tightens, and the title font scales with `clamp()`. Sections always stack vertically in a ~980px column, so desktop shows at most two tiles per row (there is deliberately no wider multi-section-per-row layout). The breakpoint is implemented as CSS classes (`.tile-grid`, `.app-shell`, `.app-frame`, `.tile`) in `styles.css` rather than inline styles, since inline styles outrank media queries. Header eyebrow / title / source rows use `flex-wrap` to fold gracefully.
 
 ### 5.2 Tile contents (each tile)
 
 1. **Top row:** ticker label (e.g. `HG=F · COPPER`) on the left; on the right the freshness tag (`LIVE` with pulsing dot for BTC, `DLY 15m` muted for others) followed by a muted `· UPD HH:MM:SS` timestamp of the last successful fetch (omitted until first data arrives).
-2. **Sublabel:** small italic serif description, e.g. "Copper futures, $/lb".
+2. **Sublabel:** small italic serif description, e.g. "Copper futures, $/lb". Its unit tracks the selected display currency ("Copper futures, C$/lb") on the four convertible tiles.
 3. **Price:** large monospace, light weight (~300), with currency prefix.
 4. **Change row:** arrow + absolute change + percent change, colored green/red. Sparkline aligned to the right of this row.
 
@@ -263,6 +269,16 @@ Hand-rolled SVG, ~140×36 px:
 - `<circle>` at the last point.
 - Defensive: render an empty `<div>` of the same dimensions if `data.length < 2`.
 
+### 5.6 Currency selection
+
+A segmented `USD · CAD · INR` control in the header eyebrow, left of the theme toggle (`components/CurrencyPicker.tsx`; active and hover styling lives in `styles.css` as `.ccy-btn`, since inline styles can't express `:hover`). The choice persists to `localStorage("mp-currency")` — its own key, *not* shared with satusd.com, which has no currency concept.
+
+**What converts.** Only the four dollar-priced tiles: BTC, Gold, Copper, Brent. Price, absolute change, sparkline history and the sublabel's unit all follow the selection. The other four never convert, in any currency — the 10Y/30Y yields are percentages, DXY is a unitless index, and USD/JPY is itself a USD pair.
+
+**Conversion is display-only.** Fetched and persisted quotes stay in USD and are multiplied by the rate at render time, so switching currency never disturbs a poll loop or a stored last-good value. Percent change is therefore identical in every currency; the absolute change is converted. Switching currencies drops the previous rate (the last-good ref in `useYahooPoll` is keyed by symbol), so CAD numbers can never appear under a rupee sign.
+
+**Disclosure.** The footer's source line names the rate actually applied — `FX USD/CAD 1.3764 · UPD 14:32:08`. This matters because the FX quote is itself 15-minute delayed: BTC spot is live, but its converted value is only as fresh as that rate. Until the rate arrives (`rate loading…`), or if it never does (`rate unavailable — showing USD`), the convertible tiles show honest USD with a `$` prefix rather than a number the app cannot back up.
+
 ---
 
 ## 6. State Shape
@@ -286,6 +302,11 @@ type DashboardState = {
   jpy: Tile;
   dxy: Tile;
   btc: Tile;
+  // Display currency, and the selected currency's USD rate. `fx` reuses the
+  // tile shape (only `price`, `loading`/`error` and `lastUpdate` are read)
+  // and stays untouched for USD, which is the base.
+  currency: "USD" | "CAD" | "INR";
+  fx: Tile;
 };
 ```
 
@@ -302,6 +323,7 @@ Each tile manages its own loading/error state. A failure in one fetch must never
 | Cold load while every proxy is down | Each Yahoo tile's last good quote is persisted to `localStorage` (`mp-lastgood-<key>`) on every successful fetch and hydrated on mount, so a returning visitor sees honestly-stale prices (old `UPD` timestamps) instead of "fetch failed". Only a first-ever visit with all proxies down shows the error state. |
 | CoinGecko rate-limited (429) | BTC tile keeps showing live spot price from Coinbase but sparkline and 24h change stay stale or unavailable. |
 | Coinbase fails | BTC tile shows "fetch failed" until next successful poll. |
+| Selected currency's FX rate unavailable | The four convertible tiles fall back to displaying USD — with the `$` prefix, so nothing is mislabeled — and the footer reads `USD/CAD rate unavailable — showing USD`. Yields, DXY and USD/JPY are unaffected, as they never convert. |
 | Network offline | Already-loaded tiles freeze on their last values (timestamps stop advancing); a tile still mid-first-load shows "fetch failed". No popups, no toasts. |
 
 Within a tick the fetcher rotates proxies and retries once; across ticks the 5-minute polling interval is the longer-horizon retry.
@@ -329,10 +351,12 @@ market-pulse/
     │   ├── Tile.tsx
     │   ├── Sparkline.tsx
     │   ├── LiveDot.tsx
-    │   └── ThemeToggle.tsx
+    │   ├── ThemeToggle.tsx
+    │   └── CurrencyPicker.tsx
     ├── lib/
     │   ├── fetchers.ts        // fetchYahoo, fetchBTCSpot, fetchBTCHistory
     │   ├── format.ts          // fmtUSD, fmtPct, fmtChg, fmtTime
+    │   ├── currency.ts        // display currencies, symbols, rate keys
     │   └── theme.ts           // COLORS (var(--…) refs), fonts
     └── styles.css             // theme tokens, resets, font imports, keyframes
 ```
@@ -361,6 +385,7 @@ The implementation is done when:
 - [ ] BTC price updates visibly within ~8 seconds of a real price move on Coinbase.
 - [ ] The 10Y yield tile shows a value between roughly 3 and 6 (i.e. as a percent, not as percent × 10).
 - [ ] Killing the network (DevTools offline) within 60 seconds causes the seven Yahoo-backed tiles (Copper, Brent, 10Y, 30Y, Gold, USD/JPY, DXY) to show "fetch failed" and BTC to follow within 8 seconds. Restoring the network restores all tiles within one polling interval.
+- [ ] Switching the currency picker to CAD or INR converts exactly the four dollar-priced tiles (BTC, Gold, Copper, Brent) and leaves the yields, DXY and USD/JPY untouched; percent changes are identical across currencies and the footer discloses the rate applied.
 - [ ] `npm run build` produces a static bundle deployable to any static host.
 - [ ] The README explains: what it does, what's live vs delayed, the CORS-proxy caveat, and how to run it.
 
@@ -376,7 +401,8 @@ The implementation is done when:
 - Push notifications / alerts.
 - Mobile-*first* layout (desktop-first with a responsive collapse is the approach; the two-column sections fold to a single stacked column at ≤640px via CSS — see §5.1 — but no separate mobile design is maintained).
 - OS-preference auto-theming (`prefers-color-scheme`) — the theme is explicit: light default plus a manual toggle, matching satusd.com (see §5.3).
-- I18N / currency conversion.
+- I18N / locale-aware number formatting (grouping and separators are always en-US).
+- Display currencies beyond the USD/CAD/INR of §5.6 — no arbitrary currency list, no currency conversion of the yield, index or FX tiles.
 
 ---
 

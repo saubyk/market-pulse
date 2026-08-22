@@ -15,6 +15,8 @@ A zero-config, browser-only dashboard showing eight financial instruments organi
 | **Currencies** | USD/JPY (`JPY=X`) | Yahoo Finance (proxied) | ~15 min delayed |
 | **Currencies** | US Dollar Index (`DX-Y.NYB`) | Yahoo Finance (proxied) | ~15 min delayed |
 
+Prices for the four dollar-priced instruments (Bitcoin, gold, copper, Brent) can be shown in **USD, CAD or INR** — see [Currency](#currency).
+
 No backend, no API keys, no auth. Deploys as static files to Netlify, Vercel, GitHub Pages, or Cloudflare Pages.
 
 ## Run
@@ -31,6 +33,14 @@ npm run preview  # serve dist/
 Bitcoin is fetched directly from Coinbase's public spot endpoint (CORS-enabled) and refreshes every 8 seconds. The 24-hour reference price and sparkline for BTC come from CoinGecko, refreshed every 5 minutes.
 
 Copper, Brent crude, Treasury yields (10Y/30Y), gold, USD/JPY, and the US Dollar Index come from Yahoo Finance's unofficial chart endpoint. Yahoo does not send `Access-Control-Allow-Origin`, so the request is proxied. The data is 15-minute delayed, so each symbol is polled every 5 minutes and the seven fetches are staggered ~400ms apart to stay under the free proxies' per-IP burst limits.
+
+## Currency
+
+The header carries a `USD · CAD · INR` picker. It converts exactly the four instruments that are dollar amounts — Bitcoin, gold, copper and Brent — including their absolute change and the unit in their sublabel (`$/oz` → `C$/oz`). The other four tiles never convert: the 10Y and 30Y yields are percentages, the Dollar Index is a unitless index, and USD/JPY is itself a USD pair. Percent changes are identical in every currency, by definition.
+
+The rate comes from Yahoo (`CAD=X` / `INR=X`) on the same 5-minute poll and through the same proxy rotation as the tiles, and only the selected currency's rate is fetched — USD is the base, so the default view issues no extra request. Conversion happens at render time: quotes are fetched and cached in USD, so switching currency never disturbs a poll loop or a stored last-good value.
+
+Because that FX quote is *itself* 15-minute delayed, the footer names the rate actually applied (`FX USD/CAD 1.3764 · UPD 14:32:08`) — Bitcoin's spot price is live, but its converted value is only as fresh as the rate. If the rate hasn't arrived yet, or can't be fetched at all, the tiles show honest USD with a `$` prefix and the footer says so rather than displaying a number the app can't back up. The choice persists in `localStorage` under `mp-currency`.
 
 ## CORS proxy caveat
 
@@ -56,9 +66,9 @@ The last good quote for each Yahoo tile is also persisted to `localStorage`, so 
 
 ## Layout
 
-- Centered, max-width 980px (stacked); widens to ~1520px on large desktops
+- Centered, max-width 980px; sections always stack, so desktop shows at most two tiles per row
 - 4 categorized sections (Scarce Assets, Energy & Metals, US Treasuries, Currencies), 2 tiles each, compact enough that the whole dashboard fits one desktop viewport height without scrolling
-- Header (clock + date + theme toggle), source/disclaimer footer
+- Header (clock + date + currency picker + theme toggle), source/disclaimer footer
 - **Responsive:** each section is a two-column grid that collapses to a single stacked column at ≤640px (page/tile padding tightens, the title scales fluidly with `clamp`, readable down to ~320px). Sections stack vertically at every width, so desktop never shows more than two tiles per row. The breakpoint lives in `src/styles.css` (`.tile-grid`, `.app-shell`, `.app-frame`, `.tile`).
 - Aesthetic target: refined Bloomberg terminal, not crypto-bro dashboard
 

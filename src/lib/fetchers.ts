@@ -36,6 +36,10 @@ async function fetchWithTimeout(url: string): Promise<Response> {
   }
 }
 
+// The seven tile symbols plus the two FX rates behind the currency picker
+// ("cad"/"inr" — units of that currency per USD). The rates are not tiles;
+// they ride the same rotation, retry and last-good machinery, and only the
+// selected one is polled, so the default USD view fetches nothing extra.
 export type YahooKey =
   | "copper"
   | "brent"
@@ -43,7 +47,9 @@ export type YahooKey =
   | "tyx"
   | "gold"
   | "jpy"
-  | "dxy";
+  | "dxy"
+  | "cad"
+  | "inr";
 
 const YAHOO_SYMBOL: Record<YahooKey, string> = {
   copper: "HG=F",
@@ -53,6 +59,8 @@ const YAHOO_SYMBOL: Record<YahooKey, string> = {
   gold: "GC=F",
   jpy: "JPY=X",
   dxy: "DX-Y.NYB",
+  cad: "CAD=X",
+  inr: "INR=X",
 };
 
 const YIELD_KEYS = new Set<YahooKey>(["tnx", "tyx"]);

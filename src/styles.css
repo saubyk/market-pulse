@@ -154,6 +154,35 @@ body {
   display: none;
 }
 
+/* ===== Currency picker =====
+   Segmented USD/CAD/INR control in the header eyebrow. In CSS rather than
+   inline styles because of the :hover and aria-pressed states. */
+.ccy-picker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ccy-btn {
+  font: inherit;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.ccy-btn:hover {
+  color: var(--accent-text);
+}
+
+.ccy-btn[aria-pressed="true"] {
+  color: var(--text);
+}
+
 @keyframes fadeUp {
   from {
     opacity: 0;
