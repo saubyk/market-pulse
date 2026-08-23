@@ -4,6 +4,7 @@
 //
 //   node scripts/snapshot.mjs                 # appends today's record
 //   node scripts/snapshot.mjs --history-out h.json   # also dump 1y closes
+//   node scripts/stats.mjs --history h.json          # → stats pack (M2)
 //
 // Fetches a year of daily closes for the nine Yahoo symbols (seven tiles
 // + the two currency-picker rates) plus BTC spot / 24h reference, and
@@ -93,7 +94,7 @@ async function fetchYahoo(key) {
 }
 
 async function fetchBtc() {
-  const btc = { spot: null, prev24h: null };
+  const btc = { spot: null, prev24h: null, history: [] };
   const errors = [];
   try {
     const d = await getJson("https://api.coinbase.com/v2/prices/BTC-USD/spot");
@@ -112,6 +113,19 @@ async function fetchBtc() {
     btc.prev24h = first;
   } catch (e) {
     errors.push(`btc.prev24h: ${e.message ?? e}`);
+  }
+  // A year of daily closes for the trends step (not stored in the
+  // snapshot record — the record keeps only spot/prev24h). Best-effort:
+  // the snapshot log itself becomes BTC's history over time.
+  try {
+    const d = await getJson(
+      "https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=365&interval=daily",
+    );
+    const prices = d?.prices ?? [];
+    if (prices.length === 0) throw new Error("empty prices");
+    btc.history = prices.filter((p) => typeof p?.[1] === "number");
+  } catch (e) {
+    errors.push(`btc.history: ${e.message ?? e}`);
   }
   return { btc, errors };
 }
@@ -143,7 +157,8 @@ async function main() {
   }
 
   const { btc, errors: btcErrors } = await fetchBtc();
-  console.log(`btc     spot ${btc.spot} prev24h ${btc.prev24h}`);
+  history.btc = btc.history;
+  console.log(`btc     spot ${btc.spot} prev24h ${btc.prev24h} (${btc.history.length} closes)`);
   for (const e of btcErrors) console.error(`btc     ${e}`);
   if (btc.spot == null) errors.push("btc");
 

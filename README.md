@@ -26,7 +26,7 @@ npm install
 npm run dev      # http://localhost:5173
 npm run build    # static bundle in dist/
 npm run preview  # serve dist/
-npm test         # unit tests for the snapshot script (Node's built-in runner)
+npm test         # unit tests for the CI scripts (Node's built-in runner)
 ```
 
 ## Live vs delayed
@@ -63,7 +63,7 @@ The worker also accepts non-browser requests (no `Origin`) that carry an `X-MP-T
 
 Independently of the live dashboard, a GitHub Action (`.github/workflows/daily-commentary.yml`) runs `scripts/snapshot.mjs` once a day after the US close and appends one JSON line — every instrument's close, previous close and timestamp, plus BTC spot and its 24h reference — to `public/data/snapshots.jsonl`, then commits it and triggers the satusd.com deploy. Re-running on the same day replaces that day's line rather than duplicating it. The dashboard's own fetching (and the 30-day sparkline) is untouched; this log is the raw material for the daily commentary planned in [issue #6](https://github.com/saubyk/market-pulse/issues/6).
 
-Run it by hand with `node scripts/snapshot.mjs` (add `--history-out file.json` to also dump a year of daily closes per symbol). It tries Yahoo directly, then the worker with `MP_PROXY_TOKEN` if that env var is set (GitHub's runner IPs are often blocked by Yahoo, so forks that want reliable snapshots should deploy their own worker and add the token as a repo secret of the same name), then the public proxies. A day where some sources fail is still recorded, with the failed keys listed under `errors`.
+Run it by hand with `node scripts/snapshot.mjs` (add `--history-out file.json` to also dump a year of daily closes per symbol, BTC included). `node scripts/stats.mjs --history file.json` then turns that dump plus the log into a **stats pack** — per-instrument 1d/1w/1m/3m/YTD moves, 52-week range position, realized-volatility regime, and cross-asset reads (30Y–10Y curve, BTC in gold ounces, copper/gold, the dollar's own move). Those are the only facts the upcoming commentary is allowed to cite; `scripts/trends.mjs` is the pure, tested module behind it (SPEC §3.7). It tries Yahoo directly, then the worker with `MP_PROXY_TOKEN` if that env var is set (GitHub's runner IPs are often blocked by Yahoo, so forks that want reliable snapshots should deploy their own worker and add the token as a repo secret of the same name), then the public proxies. A day where some sources fail is still recorded, with the failed keys listed under `errors`.
 
 (See `SPEC.md` §9 for other contingencies — Yahoo crumb/cookie requirements, CoinGecko rate limits, etc.)
 

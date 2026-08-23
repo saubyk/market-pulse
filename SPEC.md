@@ -180,7 +180,27 @@ Record shape (`null` for any source that failed that day; failed keys are listed
 
 `prev` is the previous *trading day's* close, derived from the history as the last bar on an earlier UTC day than the quote. Yahoo's `meta.chartPreviousClose` is deliberately **not** used here: it is the close before the *requested range* began (a year earlier for `range=1y`), not the prior day's.
 
-`node scripts/snapshot.mjs --history-out <file>` additionally dumps the full year of `[unix ms, close]` bars per symbol to a scratch file for the commentary step; that dump is not committed. The pure parts (`scripts/snapshot-lib.mjs`) are covered by `npm test` (Node's built-in runner, no dependency). The job needs no secrets to run; `MP_PROXY_TOKEN` only improves its odds against Yahoo's datacenter-IP blocking.
+`node scripts/snapshot.mjs --history-out <file>` additionally dumps the full year of `[unix ms, close]` bars per symbol (plus 365 daily BTC closes from CoinGecko's `market_chart?days=365&interval=daily`, best-effort) to a scratch file for the trends step (§3.7); that dump is not committed. The pure parts (`scripts/snapshot-lib.mjs`) are covered by `npm test` (Node's built-in runner, no dependency). The job needs no secrets to run; `MP_PROXY_TOKEN` only improves its odds against Yahoo's datacenter-IP blocking.
+
+### 3.7 Trend statistics (the stats pack)
+
+`scripts/trends.mjs` is a pure module (no I/O, no React; `npm test` covers it) that turns daily close series into the **only facts the commentary model is given**. `scripts/stats.mjs` is its CLI: `node scripts/stats.mjs --history <dump from §3.6> --out stats.json`.
+
+**Series.** For each of the ten instruments (nine Yahoo keys + `btc`) the series is the snapshot log merged over the fetched history, one bar per UTC date, **the log winning on shared dates** — it is what we observed and committed; the fetch only fills dates we don't own yet. Yahoo snapshot bars are dated by the quote's `ts`, not the run time, so a weekend run re-recording Friday's close lands on Friday. BTC spot is live and dated by the run time.
+
+**Per instrument** (`instruments.<key>`; `null` horizons where history is too short):
+- `last`, `lastTs`, `tradedToday` — whether a bar is dated on the run's UTC day.
+- `d1` (vs the previous trading day's bar), `w1`/`m1`/`m3` (vs the last close at or before 7/30/91 calendar days earlier — weekends and holidays just make the reference slightly older), `ytd` (vs the last close of the prior calendar year). Each is `{abs, pct}`; yields (`tnx`, `tyx`) also carry `bp`.
+- `range52w` — `{hi, lo, pos}` over the trailing 365 days, `pos` 0 = at the low, 1 = at the high; `null` under 120 bars.
+- `vol20` — annualized standard deviation of the last 20 daily log returns, in %; `volMedian1y` — median of that rolling measure across the year; `volRatio` = `vol20 / volMedian1y`; `volRegime` — `calm` (< 0.7), `normal`, `choppy` (> 1.4). The regime is relative to the instrument's own year, never an absolute threshold.
+
+**Cross-asset** (`cross`, each present only when both inputs exist):
+- `curve` — 30Y − 10Y in percentage points: `spread`, `spread1mAgo`, `change1mBp`, `shape` (`steepening` / `flattening` / `unchanged`).
+- `btcInGoldOz` — ounces of gold one bitcoin buys, `now` and `m1` change (rising = BTC outperforming gold).
+- `copperGold` — copper ÷ gold ×1000 (reads as ≈1.4), `now` and `m1`; a growth-vs-fear gauge.
+- `dollar` — DXY's own `d1` and `w1`, to be read alongside the four dollar-priced instruments' moves.
+
+**Pack-level:** `date`, `asOf`, `tradingDay` (any *exchange-traded* instrument — copper, Brent, the yields, gold, DXY — printed a bar today; FX pairs quote 24/5 and print on Sunday evenings, and BTC never stops, so they don't count. The prompt uses it to avoid narrating movement on a weekend or holiday), `barsPerInstrument` (how much history each stat rests on).
 
 ---
 
@@ -372,7 +392,10 @@ market-pulse/
 ├── scripts/
 │   ├── snapshot.mjs       // daily snapshot CLI (CI); see §3.6
 │   ├── snapshot-lib.mjs   // its pure helpers
-│   └── snapshot.test.mjs  // `npm test`
+│   ├── snapshot.test.mjs  // `npm test`
+│   ├── trends.mjs         // pure trend statistics; see §3.7
+│   ├── trends.test.mjs
+│   └── stats.mjs          // CLI: history dump + snapshot log → stats pack
 ├── .github/workflows/
 │   ├── deploy-satusd.yml  // build + push dist/ into saubyk/satusd.com
 │   └── daily-commentary.yml // cron: scripts/snapshot.mjs → commit → dispatch deploy
