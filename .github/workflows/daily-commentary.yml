@@ -43,7 +43,9 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v6
         with:
-          node-version: "20"
+          # 22+: npm test runs the src/ TypeScript tests via Node's
+          # built-in type stripping.
+          node-version: "22"
           cache: "npm"
 
       # The Anthropic SDK is a devDependency used only by the commentary

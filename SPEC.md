@@ -144,7 +144,7 @@ The last two back the currency picker (§5.6) rather than a tile. They are fetch
 
 Extract:
 - Current price: `result.meta.regularMarketPrice`
-- Reference for change: `result.meta.chartPreviousClose` (fallback: `previousClose`)
+- Reference for change: the **previous trading day's close, derived from the bars** — the last non-null `close` whose `timestamp` falls on an earlier UTC day than `regularMarketTime`. `meta.chartPreviousClose` is **not** the prior day's close: it is the close before the requested range began (≈ a month ago for `range=1mo`), and using it made every tile's change row a month-over-month move (issue #7, fixed Aug 2026). It survives only as a fallback when every bar is from the quote's own day.
 - Sparkline data: `result.indicators.quote[0].close`, filtered for non-null values
 - Last update timestamp: `result.meta.regularMarketTime * 1000`
 

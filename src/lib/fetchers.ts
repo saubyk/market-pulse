@@ -72,13 +72,49 @@ export type YahooQuote = {
   lastUpdate: number;
 };
 
-function parseYahoo(key: YahooKey, result: any): YahooQuote {
+// Change reference: the previous *trading day's* close, taken from the
+// bars themselves — the last close dated on an earlier UTC day than the
+// quote's regularMarketTime. Yahoo's meta.chartPreviousClose is NOT the
+// prior day: it is the close before the requested range began (a month
+// ago for range=1mo), which made every tile's change row a month-over-
+// month move (issue #7). It remains only as a fallback for a payload
+// whose bars are all from the quote's own day.
+function previousDayClose(
+  timestamps: number[],
+  closes: (number | null)[],
+  quoteTime: number | undefined,
+): number | undefined {
+  const quoteDay =
+    quoteTime != null ? utcDay(quoteTime * 1000) : undefined;
+  for (let i = closes.length - 1; i >= 0; i--) {
+    const c = closes[i];
+    if (c == null) continue;
+    const ts = timestamps[i];
+    if (quoteDay == null) {
+      // No quote time: the last bar is "today", use the one before it.
+      if (i < closes.length - 1) return c;
+      continue;
+    }
+    if (typeof ts === "number" && utcDay(ts * 1000) < quoteDay) return c;
+  }
+  return undefined;
+}
+
+function utcDay(ms: number): string {
+  return new Date(ms).toISOString().slice(0, 10);
+}
+
+export function parseYahoo(key: YahooKey, result: any): YahooQuote {
   const meta = result.meta ?? {};
   const closes: (number | null)[] =
     result.indicators?.quote?.[0]?.close ?? [];
+  const timestamps: number[] = result.timestamp ?? [];
 
   const rawPrice: number = meta.regularMarketPrice;
-  const rawPrev: number = meta.chartPreviousClose ?? meta.previousClose;
+  const rawPrev: number =
+    previousDayClose(timestamps, closes, meta.regularMarketTime) ??
+    meta.chartPreviousClose ??
+    meta.previousClose;
   const history = closes.filter((v): v is number => v != null);
 
   // Yahoo's yield tickers (^TNX, ^TYX) are sometimes reported as percent

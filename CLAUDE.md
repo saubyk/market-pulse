@@ -9,10 +9,10 @@ npm run dev           # dev server at http://localhost:5173
 npm run build         # tsc -b + vite build → root-relative static bundle in dist/
 npm run build:satusd  # same build with --base=/market-pulse/ (satusd.com sub-route deploy only)
 npm run preview       # serve dist/
-npm test              # node --test over scripts/*.test.mjs (CI scripts only)
+npm test              # node --test over scripts/*.test.mjs and src/lib/*.test.ts (needs Node 22+)
 ```
 
-There is no linter; `npm run build` (which runs `tsc -b`) is the correctness check for the app. `npm test` covers only the pure CI-script modules in `scripts/` (`snapshot-lib.mjs`, `trends.mjs`, `commentary-lib.mjs`) — the React app itself has no test suite. `scripts/` is plain ESM JavaScript run by Node 20 in CI; don't add TypeScript there.
+There is no linter; `npm run build` (which runs `tsc -b`) is the type check. `npm test` is Node's built-in runner over the pure CI-script modules in `scripts/` (`snapshot-lib.mjs`, `trends.mjs`, `commentary-lib.mjs`) and the pure parts of `src/lib/` (`*.test.ts`, run through Node's type stripping — keep tested modules free of enums/namespaces/parameter properties, and import siblings with the `.ts` extension in test files). Components have no tests. `scripts/` is plain ESM JavaScript; don't add TypeScript there. Both workflows run `npm test` on Node 22.
 
 The Yahoo CORS proxy worker deploys separately (not part of any CI): `cd worker && npx wrangler deploy`. Test it locally with `npx wrangler dev` (no Cloudflare auth needed).
 
@@ -46,6 +46,8 @@ Static SPA, no backend. Eight tiles (BTC, Gold, Copper, Brent, 10Y, 30Y, USD/JPY
 **Last-good-value behavior**: on a transient failure, a Yahoo tile that has loaded before re-shows its last good quote (kept in a `useRef` in `useYahooPoll`) with its original `UPD` timestamp — it must not blank to "fetch failed". Each successful fetch is also persisted to `localStorage` (`mp-lastgood-<key>`) and hydrated on mount, so cold loads show the previous session's stale prices while fetching. The error state is only for a tile with no data from any source, ever.
 
 **`^TNX`/`^TYX` quirk**: Yahoo reports yields either as percent (4.53) or percent×10 (45.3). `parseYahoo` divides price, previousClose, and history by 10 whenever the raw price is > 20. Don't remove this heuristic.
+
+**Change reference**: `parseYahoo` derives `previousClose` from the bars (last close on an earlier UTC day than `regularMarketTime`), never from `meta.chartPreviousClose`, which is the close before the *range* — using it made the change row a month-over-month move (#7). Covered by `src/lib/fetchers.test.ts`.
 
 ## Styling & theming
 
