@@ -55,12 +55,12 @@ export const OUTPUT_SCHEMA = {
       description:
         "One line, under 90 characters, sentence case, no trailing period.",
     },
+    // No minItems/maxItems: the structured-output grammar only accepts
+    // 0 or 1 there. The count is enforced by the prompt and validateOutput.
     body: {
       type: "array",
       description: "Two to four short paragraphs of plain text.",
       items: { type: "string" },
-      minItems: 2,
-      maxItems: 4,
     },
   },
   required: ["headline", "body"],
