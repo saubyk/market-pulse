@@ -1,0 +1,72 @@
+# Daily snapshot (and, from M3 on, LLM commentary) for the dashboard's
+# "Today's read" — see SPEC.md §3.6 and issue #6.
+#
+# Runs after the US bond-market close (21:00 UTC) so the day's closes are
+# in; GitHub cron can lag by some minutes, which is fine. Appends one line
+# to public/data/snapshots.jsonl and pushes the commit to main.
+#
+# Secrets (all optional — the job degrades rather than fails without them):
+#   MP_PROXY_TOKEN  lets scripts/snapshot.mjs reach Yahoo through the
+#                   Cloudflare worker when Yahoo blocks the runner's IP.
+#                   Must match `npx wrangler secret put MP_PROXY_TOKEN`.
+#
+# The push below uses GITHUB_TOKEN, and pushes made with that token never
+# trigger other workflows — so the deploy is dispatched explicitly at the
+# end, which IS allowed for workflow_dispatch.
+
+name: Daily snapshot
+
+on:
+  schedule:
+    - cron: "30 21 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: daily-snapshot
+  cancel-in-progress: false
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "20"
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Take snapshot
+        env:
+          MP_PROXY_TOKEN: ${{ secrets.MP_PROXY_TOKEN }}
+        run: node scripts/snapshot.mjs
+
+      - name: Commit and push
+        id: commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/data/snapshots.jsonl
+          if git diff --cached --quiet; then
+            echo "No changes."
+            echo "pushed=false" >> "$GITHUB_OUTPUT"
+          else
+            git commit -m "Daily snapshot $(date -u +%F)"
+            git pull --rebase origin main
+            git push origin HEAD:main
+            echo "pushed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Deploy to satusd.com
+        if: steps.commit.outputs.pushed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run deploy-satusd.yml --ref main

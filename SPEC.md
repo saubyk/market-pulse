@@ -13,10 +13,11 @@ A minimal, browser-only dashboard that displays financial instruments side-by-si
 - Robust to API hiccups: a failed tile must not break the others.
 - Optional display of the dollar-priced instruments in CAD or INR, converted at a live-fetched rate that the UI discloses.
 - Deployable as static files to Netlify, Vercel, GitHub Pages, or Cloudflare Pages.
+- A daily snapshot log of every instrument's close, kept in the repo (§3.6), as the basis for the planned daily commentary.
 
 ### Non-Goals
 - Historical charting beyond a small sparkline.
-- User accounts, watchlists, or persistence.
+- User accounts, watchlists, or per-user persistence.
 - Trading, alerts, or notifications.
 - Mobile-first layout (desktop-first is fine; should not break on mobile but no special tuning required).
 - Real-time tick streaming for non-BTC instruments (free-tier limitation; out of scope).
@@ -59,6 +60,8 @@ const PROXIES = [
 Each Yahoo fetch walks the rotation, **validating the parsed JSON inside the loop** (a `200` with a non-Yahoo body falls through to the next proxy), caps each attempt at 8s with an `AbortController`, and retries the whole rotation once after ~700ms. See `fetchYahooOnce` / `fetchYahoo` in `src/lib/fetchers.ts`.
 
 The worker is optional infrastructure, not a dependency: the app must keep working (on the public fallbacks) when the first entry is unreachable, preserving the clone-and-run goal in §1.
+
+Besides the browser origin lock, the worker has one server-to-server path: a request with **no** `Origin` header is answered if it carries the `MP_PROXY_TOKEN` secret (`npx wrangler secret put MP_PROXY_TOKEN`) in an `X-MP-Token` header, compared in constant time. This exists only for the daily snapshot job (§3.6), whose GitHub runner IPs Yahoo tends to block. A token presented alongside a disallowed `Origin` is still rejected; an unset secret disables the path.
 
 **Known risk:** the public fallbacks are free services and can rate-limit or go offline simultaneously — history: all three did in July 2026, which is what motivated the worker. See §9.
 
@@ -154,6 +157,30 @@ Yahoo has historically reported `^TNX` two different ways:
 ```ts
 const divisor = key === "tnx" && raw.price > 20 ? 10 : 1;
 ```
+
+### 3.6 Daily snapshot log (CI, not the browser)
+
+The dashboard's own fetching is untouched by this section — the tiles keep `range=1mo` and the 30-day sparkline. Separately, `scripts/snapshot.mjs` runs once a day in GitHub Actions (`.github/workflows/daily-commentary.yml`, cron 21:30 UTC after the US bond close, plus `workflow_dispatch` for manual catch-up) and records the day's closes for later trend analysis and the planned LLM-written commentary (issue #6).
+
+What it does:
+- Fetches `interval=1d&range=1y` for the nine Yahoo symbols in §3.4 (seven tiles + `CAD=X`/`INR=X`), serially with a 400ms gap, trying Yahoo directly → the worker with `X-MP-Token` (§3.1; only if `MP_PROXY_TOKEN` is set) → `allorigins` → `codetabs`, with a 10s timeout per attempt and the JSON validated per attempt. Then Coinbase spot and CoinGecko's 24h reference for BTC, as in §3.2–3.3.
+- Applies the same `^TNX`/`^TYX` ÷10 heuristic as §3.5.
+- Upserts **one JSON line per UTC date** into `public/data/snapshots.jsonl`, sorted by date. Re-running on the same day replaces that day's line, never duplicates it. The file lives in `public/` so Vite ships it with the bundle and it is fetchable from the site's own origin.
+- Commits the file to `main` with the Actions bot identity, then dispatches `deploy-satusd.yml` explicitly (pushes made with `GITHUB_TOKEN` never trigger other workflows on their own).
+
+Record shape (`null` for any source that failed that day; failed keys are listed in `errors` so a partial day is recorded honestly rather than lost — the job only exits non-zero if *every* source failed):
+
+```json
+{"date":"2026-08-23","asOf":1787458140660,
+ "copper":{"close":6.587,"prev":6.46,"ts":1787345999000}, "brent":{...}, "tnx":{...}, "tyx":{...},
+ "gold":{...}, "jpy":{...}, "dxy":{...}, "cad":{...}, "inr":{...},
+ "btc":{"spot":76799.995,"prev24h":78301.61},
+ "errors":["inr"]}
+```
+
+`prev` is the previous *trading day's* close, derived from the history as the last bar on an earlier UTC day than the quote. Yahoo's `meta.chartPreviousClose` is deliberately **not** used here: it is the close before the *requested range* began (a year earlier for `range=1y`), not the prior day's.
+
+`node scripts/snapshot.mjs --history-out <file>` additionally dumps the full year of `[unix ms, close]` bars per symbol to a scratch file for the commentary step; that dump is not committed. The pure parts (`scripts/snapshot-lib.mjs`) are covered by `npm test` (Node's built-in runner, no dependency). The job needs no secrets to run; `MP_PROXY_TOKEN` only improves its odds against Yahoo's datacenter-IP blocking.
 
 ---
 
@@ -336,10 +363,19 @@ Within a tick the fetcher rotates proxies and retries once; across ticks the 5-m
 market-pulse/
 ├── index.html
 ├── public/
-│   └── favicon.svg        // shared satusd.com brand mark
+│   ├── favicon.svg        // shared satusd.com brand mark
+│   └── data/
+│       └── snapshots.jsonl // one line per day, appended by CI (§3.6)
 ├── worker/
 │   ├── index.js           // Cloudflare Worker: pinned Yahoo CORS proxy (primary)
 │   └── wrangler.toml
+├── scripts/
+│   ├── snapshot.mjs       // daily snapshot CLI (CI); see §3.6
+│   ├── snapshot-lib.mjs   // its pure helpers
+│   └── snapshot.test.mjs  // `npm test`
+├── .github/workflows/
+│   ├── deploy-satusd.yml  // build + push dist/ into saubyk/satusd.com
+│   └── daily-commentary.yml // cron: scripts/snapshot.mjs → commit → dispatch deploy
 ├── package.json
 ├── tsconfig.json
 ├── vite.config.ts

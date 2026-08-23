@@ -9,9 +9,10 @@ npm run dev           # dev server at http://localhost:5173
 npm run build         # tsc -b + vite build → root-relative static bundle in dist/
 npm run build:satusd  # same build with --base=/market-pulse/ (satusd.com sub-route deploy only)
 npm run preview       # serve dist/
+npm test              # node --test over scripts/*.test.mjs (snapshot script only)
 ```
 
-There are no tests and no linter; `npm run build` (which runs `tsc -b`) is the correctness check.
+There is no linter; `npm run build` (which runs `tsc -b`) is the correctness check for the app. `npm test` covers only the pure helpers of the CI snapshot script in `scripts/` — the React app itself has no test suite.
 
 The Yahoo CORS proxy worker deploys separately (not part of any CI): `cd worker && npx wrangler deploy`. Test it locally with `npx wrangler dev` (no Cloudflare auth needed).
 
@@ -28,6 +29,8 @@ The Yahoo CORS proxy worker deploys separately (not part of any CI): `cd worker 
 There is no deploy step for the standalone flavor: `npm run build` produces a root-relative `dist/` that drops onto any static host (Netlify, Vercel, GitHub Pages, Cloudflare Pages).
 
 The Cloudflare Worker in `worker/` is deployed manually (`npx wrangler deploy`), not by CI — editing `worker/index.js` does nothing in production until someone redeploys it.
+
+`.github/workflows/daily-commentary.yml` runs `scripts/snapshot.mjs` daily (cron 21:30 UTC), commits `public/data/snapshots.jsonl` to `main`, and then dispatches `deploy-satusd.yml` explicitly — pushes made with `GITHUB_TOKEN` never trigger other workflows. The script reaches Yahoo through the worker's token path (`X-MP-Token` = `MP_PROXY_TOKEN` secret, set both on the worker and in the repo). This pipeline must never change the dashboard's own fetching (`src/lib/fetchers.ts`, `range=1mo`, 30-day sparkline); see SPEC.md §3.6 and issue #6 for the plan it belongs to.
 
 ## Architecture
 

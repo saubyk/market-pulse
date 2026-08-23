@@ -2,7 +2,8 @@
 //
 // Not an open proxy: only Yahoo's v8 chart endpoint is forwarded — any other
 // target is rejected — and only browser requests from the allowed origins
-// (the deployed dashboard, plus localhost dev) are answered. Responses are
+// (the deployed dashboard, plus localhost dev) or token-bearing requests
+// from the daily snapshot job are answered. Responses are
 // cached at the Cloudflare edge for CACHE_TTL_S, so however many visitors
 // the dashboard has, Yahoo sees at most one request per symbol per TTL
 // window per edge location.
@@ -33,7 +34,24 @@ function isAllowedOrigin(origin) {
   return /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
 }
 
+// Server-to-server path for the daily snapshot job (scripts/snapshot.mjs,
+// run from GitHub Actions, whose datacenter IPs Yahoo tends to block).
+// Non-browser callers send no Origin; instead they must present the
+// MP_PROXY_TOKEN secret in an X-MP-Token header. Unset secret = path off.
+//   npx wrangler secret put MP_PROXY_TOKEN
+async function hasValidToken(request, env) {
+  const expected = env.MP_PROXY_TOKEN;
+  const given = request.headers.get("X-MP-Token");
+  if (!expected || !given) return false;
+  const enc = new TextEncoder();
+  const a = enc.encode(expected);
+  const b = enc.encode(given);
+  if (a.byteLength !== b.byteLength) return false;
+  return crypto.subtle.timingSafeEqual(a, b);
+}
+
 function corsHeaders(origin) {
+  if (!origin) return {};
   return {
     "Access-Control-Allow-Origin": origin,
     "Access-Control-Allow-Methods": "GET, OPTIONS",
@@ -43,9 +61,12 @@ function corsHeaders(origin) {
 }
 
 export default {
-  async fetch(request) {
+  async fetch(request, env) {
     const origin = request.headers.get("Origin");
-    if (!isAllowedOrigin(origin)) {
+    const allowed =
+      isAllowedOrigin(origin) ||
+      (!origin && (await hasValidToken(request, env)));
+    if (!allowed) {
       return new Response("origin not allowed", { status: 403 });
     }
 

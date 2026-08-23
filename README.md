@@ -26,6 +26,7 @@ npm install
 npm run dev      # http://localhost:5173
 npm run build    # static bundle in dist/
 npm run preview  # serve dist/
+npm test         # unit tests for the snapshot script (Node's built-in runner)
 ```
 
 ## Live vs delayed
@@ -55,6 +56,14 @@ The free public proxies remain in the rotation as fallback, so a fresh clone wor
 - **Retry** — if a full rotation fails, the fetcher pauses ~700ms and runs the rotation once more, which clears most transient single-tick failures.
 
 **Deploying your own worker** (recommended for forks): `cd worker && npx wrangler deploy` (needs a free Cloudflare account), then replace the first entry of the `PROXIES` array in `src/lib/fetchers.ts` with your worker's URL plus `/?url=`. The rotation lives in `fetchYahooOnce`; the retry wrapper is `fetchYahoo`.
+
+The worker also accepts non-browser requests (no `Origin`) that carry an `X-MP-Token` header matching its `MP_PROXY_TOKEN` secret — used only by the daily snapshot job below. `npx wrangler secret put MP_PROXY_TOKEN` enables it; leaving the secret unset turns the path off.
+
+## Daily snapshot log
+
+Independently of the live dashboard, a GitHub Action (`.github/workflows/daily-commentary.yml`) runs `scripts/snapshot.mjs` once a day after the US close and appends one JSON line — every instrument's close, previous close and timestamp, plus BTC spot and its 24h reference — to `public/data/snapshots.jsonl`, then commits it and triggers the satusd.com deploy. Re-running on the same day replaces that day's line rather than duplicating it. The dashboard's own fetching (and the 30-day sparkline) is untouched; this log is the raw material for the daily commentary planned in [issue #6](https://github.com/saubyk/market-pulse/issues/6).
+
+Run it by hand with `node scripts/snapshot.mjs` (add `--history-out file.json` to also dump a year of daily closes per symbol). It tries Yahoo directly, then the worker with `MP_PROXY_TOKEN` if that env var is set (GitHub's runner IPs are often blocked by Yahoo, so forks that want reliable snapshots should deploy their own worker and add the token as a repo secret of the same name), then the public proxies. A day where some sources fail is still recorded, with the failed keys listed under `errors`.
 
 (See `SPEC.md` §9 for other contingencies — Yahoo crumb/cookie requirements, CoinGecko rate limits, etc.)
 
