@@ -64,7 +64,12 @@ jobs:
       - name: Build stats pack
         run: node scripts/stats.mjs --history "$RUNNER_TEMP/history.json" --out "$RUNNER_TEMP/stats.json"
 
+      # continue-on-error so a failed note (API outage, refusal, bad output)
+      # never costs the day's snapshot: the commit still happens, and the
+      # last step re-raises the failure so the run is red and notifies.
       - name: Generate commentary
+        id: commentary
+        continue-on-error: true
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: node scripts/commentary.mjs --stats "$RUNNER_TEMP/stats.json"
@@ -90,3 +95,9 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh workflow run deploy-satusd.yml --ref main
+
+      - name: Fail the run if the commentary step failed
+        if: steps.commentary.outcome == 'failure'
+        run: |
+          echo "::error::Commentary generation failed — snapshot was committed, note was not. See the 'Generate commentary' step."
+          exit 1

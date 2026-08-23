@@ -493,6 +493,20 @@ These are documented for the implementer; they are **not** required in v1.
 3. **CoinGecko free tier rate limit.** Polling history once every 5 minutes is well under the limit, but if multiple users open the page in quick succession from the same IP, it can hit the cap. If that becomes an issue, swap to Coinbase historic endpoint: `GET https://api.coinbase.com/v2/prices/BTC-USD/spot?date=YYYY-MM-DD`.
 4. **`^TNX` convention change.** The auto-detection in §3.5 should handle both conventions, but if Yahoo ever reports values in the 15–20 range (unlikely but possible during an extreme bond-market dislocation), the heuristic would mis-fire. Worth a comment in the code.
 
+### 9.1 Operating the daily job (§3.6–3.8)
+
+How the commentary pipeline fails, and what is in place for each:
+
+- **The note fails but the snapshot doesn't** (API outage, a refusal that survives the fallback chain, a malformed answer, a missing key on a fork). The `Generate commentary` step is `continue-on-error`; the snapshot still commits and deploys, and a final step re-raises the failure so the run is red. The previous day's `commentary.json` stays live; after `STALE_AFTER_DAYS` (3) the panel says `no commentary since <date>` (§5.7).
+- **Who hears about a red run.** GitHub sends scheduled-workflow failure notifications to *the user who last modified the cron line in the workflow file* — so whoever last touched `cron:` in `daily-commentary.yml` owns the alerts. Keep that in mind when editing the schedule from a different account.
+- **Cron drift.** GitHub schedules can run late under load and may drop queued runs at the top of the hour; the job runs at :30 for that reason. A dropped run is simply a missing day.
+- **Catch-up semantics.** `workflow_dispatch` re-runs *today*: a same-day re-run replaces today's snapshot line and note (upsert by date). There is no backfill — a missed day stays a gap in `snapshots.jsonl`, because the sources only report the current close; the Yahoo history fetched for the stats pack still covers the gap for trend purposes.
+- **60-day inactivity rule.** On public repositories GitHub disables scheduled workflows after 60 days without repository activity. The job's own daily commit counts as activity while it runs, so the rule only bites after two months of *consecutive* failures — by which point the stale panel has been red for 57 days. Re-enable from the Actions tab. There is deliberately no separate keepalive.
+- **Deploy trigger.** The job pushes with `GITHUB_TOKEN`, which never triggers other workflows, so it dispatches `deploy-satusd.yml` explicitly (allowed for `workflow_dispatch`). `deploy-satusd.yml` also runs `npm test` before building, so a broken `main` is not deployed.
+- **Cost.** Measured on the first run: 3,370 input + 638 output tokens on `claude-fable-5` ≈ $0.07/run, ≈ $2/month. `usage` is stored in every `commentary.json` / `.jsonl` line, so actual spend is auditable from the archive: `jq -s 'map(.usage.inputTokens) | add' public/data/commentary.jsonl`.
+- **Growth.** `snapshots.jsonl` ≈ 0.7 KB/day (≈ 250 KB/year); `commentary.jsonl` ≈ 5.6 KB/day with the stats block (≈ 2 MB/year). Both ship in `dist/` but the browser only ever fetches `commentary.json` (≈ 10 KB), so the archives cost nothing at page load. No retention policy is needed for years; if one ever is, the stats block in the archive is the first thing to drop.
+- **Fork checklist.** Deploy your own worker and set `MP_PROXY_TOKEN` (worker secret + repo secret) for reliable Yahoo access; add `ANTHROPIC_API_KEY` for the note; or leave both unset and the job still records whatever the public proxies return.
+
 ---
 
 ## 10. Acceptance Criteria
