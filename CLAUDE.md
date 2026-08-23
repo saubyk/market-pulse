@@ -34,7 +34,7 @@ The Cloudflare Worker in `worker/` is deployed manually (`npx wrangler deploy`),
 
 ## Architecture
 
-Static SPA, no backend. Eight tiles (BTC, Gold, Copper, Brent, 10Y, 30Y, USD/JPY, DXY) in four sections. All state lives in `src/App.tsx` as one `useState<TileState>` per tile; each tile's fetch loop is fully independent so one failure never touches another tile.
+Static SPA, no backend. Eight tiles (BTC, Gold, Copper, Brent, 10Y, 30Y, USD/JPY, DXY) in four sections. All state lives in `src/App.tsx` as one `useState<TileState>` per tile; each tile's fetch loop is fully independent so one failure never touches another tile. The only other stateful piece is `components/Commentary.tsx` ("Today's read", SPEC §5.7): it fetches `public/data/commentary.json` once from the site's own origin via `import.meta.env.BASE_URL`, renders nothing when the file is absent, and flags notes older than 3 days as stale. It must stay collapsed by default — the one-viewport layout budget allows it exactly one row.
 
 **Data flow** (`src/lib/fetchers.ts` → `App.tsx` → `components/Tile.tsx`):
 

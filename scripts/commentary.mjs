@@ -49,13 +49,10 @@ function requestParams(pack) {
       effort: EFFORT,
       format: { type: "json_schema", schema: OUTPUT_SCHEMA },
     },
-    system: [
-      {
-        type: "text",
-        text: SYSTEM_PROMPT,
-        cache_control: { type: "ephemeral" },
-      },
-    ],
+    // The system prompt is frozen text, but the job runs once a day and
+    // the prompt cache lives minutes, so no cache_control: a write would
+    // cost the 25% premium for a read that never comes.
+    system: SYSTEM_PROMPT,
     messages: [{ role: "user", content: userMessage(pack) }],
   };
 }

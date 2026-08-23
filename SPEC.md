@@ -1,6 +1,6 @@
 # Market Pulse — Specification
 
-A minimal, browser-only dashboard that displays financial instruments side-by-side across four categories — **Energy & Metals** (Copper, Brent crude), **US Treasuries** (10Y, 30Y yields), **Scarce Assets** (Bitcoin, Gold), and **Currencies** (USD/JPY, US Dollar Index). The dollar-priced instruments can be displayed in USD (default), CAD or INR. Designed to run entirely as a static SPA — no backend, no API keys, no auth.
+A minimal, browser-only dashboard that displays financial instruments side-by-side across four categories — **Energy & Metals** (Copper, Brent crude), **US Treasuries** (10Y, 30Y yields), **Scarce Assets** (Bitcoin, Gold), and **Currencies** (USD/JPY, US Dollar Index). The dollar-priced instruments can be displayed in USD (default), CAD or INR. A collapsed "Today's read" row carries a short daily note, written by Claude from the day's figures in CI, that puts the numbers in context for a lay reader. Designed to run entirely as a static SPA — no backend, no API keys in the browser, no auth.
 
 ---
 
@@ -13,7 +13,7 @@ A minimal, browser-only dashboard that displays financial instruments side-by-si
 - Robust to API hiccups: a failed tile must not break the others.
 - Optional display of the dollar-priced instruments in CAD or INR, converted at a live-fetched rate that the UI discloses.
 - Deployable as static files to Netlify, Vercel, GitHub Pages, or Cloudflare Pages.
-- A daily snapshot log of every instrument's close, kept in the repo (§3.6), as the basis for the planned daily commentary.
+- A daily snapshot log of every instrument's close, kept in the repo (§3.6), and a daily LLM-written note generated from it in CI (§3.8) and shown in the dashboard (§5.7) — context for a lay reader, produced without any key or call from the browser.
 
 ### Non-Goals
 - Historical charting beyond a small sparkline.
@@ -21,6 +21,7 @@ A minimal, browser-only dashboard that displays financial instruments side-by-si
 - Trading, alerts, or notifications.
 - Mobile-first layout (desktop-first is fine; should not break on mobile but no special tuning required).
 - Real-time tick streaming for non-BTC instruments (free-tier limitation; out of scope).
+- Commentary generated in the browser or on demand: the note is a static file produced once a day; the dashboard only reads it.
 
 ---
 
@@ -294,7 +295,7 @@ Initial load: fire all fetches in parallel on mount. Don't await anything before
 
 - Centered container, max-width ~980px (stacked layout).
 - Four labeled sections (Scarce Assets, Energy & Metals, US Treasuries, Currencies), each a two-column grid of 2 tiles, gap ~12px. Sections are unboxed — just the uppercase label above the tile grid. Vertical spacing throughout (page padding, header/footer margins, tile internals) is deliberately compact so all eight tiles fit one desktop viewport height (~755px or taller) with no vertical scrolling.
-- Header above, source footer below. The eyebrow row carries the satusd.com link, the currency picker (§5.6) and the theme toggle, so neither control costs vertical space.
+- Header above, source footer below. The eyebrow row carries the satusd.com link, the currency picker (§5.6) and the theme toggle, so neither control costs vertical space. Directly under the header divider sits the single-row "Today's read" toggle (§5.7), which adds one line to the one-viewport budget and nothing more until opened.
 - **Responsive:** at ≤640px the grids collapse to a single column, page/tile padding tightens, and the title font scales with `clamp()`. Sections always stack vertically in a ~980px column, so desktop shows at most two tiles per row (there is deliberately no wider multi-section-per-row layout). The breakpoint is implemented as CSS classes (`.tile-grid`, `.app-shell`, `.app-frame`, `.tile`) in `styles.css` rather than inline styles, since inline styles outrank media queries. Header eyebrow / title / source rows use `flex-wrap` to fold gracefully.
 
 ### 5.2 Tile contents (each tile)
@@ -359,6 +360,20 @@ A segmented `USD · CAD · INR` control in the header eyebrow, left of the theme
 
 **Disclosure.** The footer's source line names the rate actually applied — `FX USD/CAD 1.3764 · UPD 14:32:08`. This matters because the FX quote is itself 15-minute delayed: BTC spot is live, but its converted value is only as fresh as that rate. Until the rate arrives (`rate loading…`), or if it never does (`rate unavailable — showing USD`), the convertible tiles show honest USD with a `$` prefix rather than a number the app cannot back up.
 
+### 5.7 Today's read (daily commentary panel)
+
+`components/Commentary.tsx`, rendered between the header divider and the first section. On mount it fetches `${import.meta.env.BASE_URL}data/commentary.json` once — a static file on the site's own origin, produced by the CI job in §3.8, so there is no proxy, no key and no polling. The fetch is base-aware so the satusd.com sub-route deploy resolves it correctly.
+
+**Collapsed (default):** one row — `TODAY'S READ — <headline> ▾` — eyebrow micro-type for the label, the headline in body text with an ellipsis if it overflows (wrapping at ≤640px). This is the only vertical cost in the default state, keeping the one-viewport layout of §5.1.
+
+**Expanded (click):** the note's paragraphs in the display serif at 15px (max width 72ch), a compact stats strip — the eight tiles in dashboard order with their week / month / YTD moves (basis points for the two yields, percent for the rest), four per row, two at ≤640px — and a footer line `AI-GENERATED FROM THE DAY'S NUMBERS · AUG 23 · NOT INVESTMENT ADVICE`, with `· MARKETS CLOSED` appended when the note's `tradingDay` is false. The open/closed state persists to `localStorage("mp-commentary-open")` (its own key, not shared with satusd.com).
+
+**Absent note:** if the file 404s or fails to parse (a fresh clone, a fork that has never run the job, a network error), the component renders nothing at all — no placeholder, no reserved space. It also renders nothing until the fetch resolves, so the dashboard never shifts layout for a note that turns out not to exist.
+
+**Stale note:** the job runs every day, weekends included, so a note older than `STALE_AFTER_DAYS` (3) whole UTC days means the pipeline is broken. The row then reads `TODAY'S READ — no commentary since AUG 20` in muted text instead of presenting the old headline as today's; expanding still shows the old note, headed by a red `LAST NOTE IS FROM AUG 20 — THE DAILY JOB HAS NOT RUN SINCE` line. Staleness is computed against the dashboard's 1-second clock, so a tab left open rolls over correctly.
+
+Styling follows the rest of the app: colours via `theme.ts` tokens inline; the `:hover`, the ellipsis and the strip's breakpoint in `styles.css` (`.read-*`).
+
 ---
 
 ## 6. State Shape
@@ -388,6 +403,11 @@ type DashboardState = {
   currency: "USD" | "CAD" | "INR";
   fx: Tile;
 };
+
+// Today's read (§5.7) keeps its own state inside components/Commentary.tsx:
+// the fetched note (undefined while loading, null when absent) and the
+// open/closed flag. Its shape is `Commentary` in src/lib/commentary.ts,
+// mirroring the document written by scripts/commentary.mjs (§3.8).
 ```
 
 Each tile manages its own loading/error state. A failure in one fetch must never propagate to other tiles.
@@ -405,6 +425,8 @@ Each tile manages its own loading/error state. A failure in one fetch must never
 | Coinbase fails | BTC tile shows "fetch failed" until next successful poll. |
 | Selected currency's FX rate unavailable | The four convertible tiles fall back to displaying USD — with the `$` prefix, so nothing is mislabeled — and the footer reads `USD/CAD rate unavailable — showing USD`. Yields, DXY and USD/JPY are unaffected, as they never convert. |
 | Network offline | Already-loaded tiles freeze on their last values (timestamps stop advancing); a tile still mid-first-load shows "fetch failed". No popups, no toasts. |
+| `commentary.json` missing / unparsable | The Today's read row does not render at all. Nothing else is affected. |
+| Daily commentary job broken (note > 3 days old) | The row reads `no commentary since <date>` and the expanded view flags the last note's date in red; the old text remains readable but is never presented as today's. |
 
 Within a tick the fetcher rotates proxies and retries once; across ticks the 5-minute polling interval is the longer-horizon retry.
 
@@ -483,6 +505,7 @@ The implementation is done when:
 - [ ] The 10Y yield tile shows a value between roughly 3 and 6 (i.e. as a percent, not as percent × 10).
 - [ ] Killing the network (DevTools offline) within 60 seconds causes the seven Yahoo-backed tiles (Copper, Brent, 10Y, 30Y, Gold, USD/JPY, DXY) to show "fetch failed" and BTC to follow within 8 seconds. Restoring the network restores all tiles within one polling interval.
 - [ ] Switching the currency picker to CAD or INR converts exactly the four dollar-priced tiles (BTC, Gold, Copper, Brent) and leaves the yields, DXY and USD/JPY untouched; percent changes are identical across currencies and the footer discloses the rate applied.
+- [ ] With a committed `public/data/commentary.json`, the Today's read row shows its headline, expands to the paragraphs, stats strip and AI-generated footer, and adds no height to the dashboard while collapsed; with the file removed the row is absent and the dashboard is otherwise unchanged.
 - [ ] `npm run build` produces a static bundle deployable to any static host.
 - [ ] The README explains: what it does, what's live vs delayed, the CORS-proxy caveat, and how to run it.
 
@@ -500,6 +523,7 @@ The implementation is done when:
 - OS-preference auto-theming (`prefers-color-scheme`) — the theme is explicit: light default plus a manual toggle, matching satusd.com (see §5.3).
 - I18N / locale-aware number formatting (grouping and separators are always en-US).
 - Display currencies beyond the USD/CAD/INR of §5.6 — no arbitrary currency list, no currency conversion of the yield, index or FX tiles.
+- Commentary features beyond §5.7: no per-tile notes, no history browser for past notes in the UI (the archive is `commentary.jsonl`), no "regenerate" button, no browser-side LLM calls.
 
 ---
 

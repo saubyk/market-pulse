@@ -4,6 +4,7 @@ import { fmtClock, fmtDate, fmtNum, fmtTime } from "./lib/format";
 import { Tile, type TileState } from "./components/Tile";
 import { ThemeToggle } from "./components/ThemeToggle";
 import { CurrencyPicker } from "./components/CurrencyPicker";
+import { Commentary } from "./components/Commentary";
 import {
   CURRENCIES,
   loadCurrency,
@@ -387,6 +388,9 @@ export default function App() {
             margin: "0 0 12px",
           }}
         />
+
+        {/* Today's read — renders nothing when there is no note */}
+        <Commentary now={now} />
 
         <Section title="Scarce Assets">
           <Tile

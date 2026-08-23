@@ -15,7 +15,7 @@ A zero-config, browser-only dashboard showing eight financial instruments organi
 | **Currencies** | USD/JPY (`JPY=X`) | Yahoo Finance (proxied) | ~15 min delayed |
 | **Currencies** | US Dollar Index (`DX-Y.NYB`) | Yahoo Finance (proxied) | ~15 min delayed |
 
-Prices for the four dollar-priced instruments (Bitcoin, gold, copper, Brent) can be shown in **USD, CAD or INR** — see [Currency](#currency).
+Prices for the four dollar-priced instruments (Bitcoin, gold, copper, Brent) can be shown in **USD, CAD or INR** — see [Currency](#currency). A collapsed **Today's read** row under the header carries a short daily note, written by Claude from the day's figures, that puts the numbers in context — see [Today's read](#todays-read).
 
 No backend, no API keys, no auth. Deploys as static files to Netlify, Vercel, GitHub Pages, or Cloudflare Pages.
 
@@ -42,6 +42,12 @@ The header carries a `USD · CAD · INR` picker. It converts exactly the four in
 The rate comes from Yahoo (`CAD=X` / `INR=X`) on the same 5-minute poll and through the same proxy rotation as the tiles, and only the selected currency's rate is fetched — USD is the base, so the default view issues no extra request. Conversion happens at render time: quotes are fetched and cached in USD, so switching currency never disturbs a poll loop or a stored last-good value.
 
 Because that FX quote is *itself* 15-minute delayed, the footer names the rate actually applied (`FX USD/CAD 1.3764 · UPD 14:32:08`) — Bitcoin's spot price is live, but its converted value is only as fresh as the rate. If the rate hasn't arrived yet, or can't be fetched at all, the tiles show honest USD with a `$` prefix and the footer says so rather than displaying a number the app can't back up. The choice persists in `localStorage` under `mp-currency`.
+
+## Today's read
+
+Under the header sits a one-line `TODAY'S READ — <headline> ▾` row. Click it and you get two to four short paragraphs explaining what moved and how today compares with the past week, month and year, a strip of week / month / year-to-date moves for the eight tiles, and an `AI-generated … not investment advice` footer. It's collapsed by default so the dashboard still fits one screen; the choice persists in `localStorage` under `mp-commentary-open`.
+
+The note is a static file (`public/data/commentary.json`) written once a day by the CI job described under [Daily snapshot log and commentary](#daily-snapshot-log-and-commentary) — the browser only fetches it from the site's own origin. No key, no LLM call, nothing dynamic on the client. If the file isn't there (a fresh clone, a fork that hasn't enabled the job) the row simply doesn't appear. If it's more than three days old the row says `no commentary since <date>` rather than passing off an old note as today's.
 
 ## CORS proxy caveat
 
