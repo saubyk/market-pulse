@@ -1,41 +1,42 @@
 {
   "date": "2026-08-23",
-  "generatedAt": 1787460630689,
+  "generatedAt": 1787462669305,
   "model": "claude-fable-5",
   "tradingDay": false,
-  "headline": "Bitcoin gives back 2% after a 22% week; Treasury yields sit near 52-week highs",
+  "headline": "Bitcoin gives back some of a 21% weekly surge; 10-year yield sits at the top of its range",
   "body": [
-    "It is not a trading day for exchange-traded instruments, so most figures on the dashboard are quoting Friday's close. Bitcoin, which trades through the weekend, slipped 2.2% today to about $76,700 — a modest pullback after a striking 21.7% rise over the past week. Even so, it remains down 13% for the year and sits in the lower third of its 52-week range.",
-    "Treasury yields are worth a look. The 10-year yield, at 4.74%, is within a whisker of its 52-week high after rising 8 basis points over the past month and 58 basis points year to date. The 30-year, at 5.28%, is also near the top of its one-year range, and the gap between the two has widened by about 5 basis points over the month — a mild steepening of the curve.",
-    "Gold closed the week at $4,681 an ounce, up 6.9% over the week and 12.9% over the month. That rise came alongside a softer dollar: the dollar index fell 2.3% over the same month — a relationship worth noting, not an explanation. Copper is quoting near the top of its 52-week range, at 95% of it, with unusually calm price swings. Brent crude, up 6.6% on the week at $94, remains in a choppy volatility regime, with swings running well above its own one-year norm."
+    "It is not a trading day for exchange-traded instruments, so most of the dashboard is quoting Friday's close. Bitcoin, which trades through the weekend, fell 2.8% today to around $76,200 — a pullback after a striking week in which it rose 21%. Even after that run it sits only about a quarter of the way up its 52-week range and remains down 14% for the year.",
+    "In bonds, the US 10-year Treasury yield closed the week at 4.74%, essentially at its 52-week high, up 4 basis points on the week and 58 basis points year to date. The 30-year, at 5.28%, is also near the top of its range, and the gap between the two has widened by about 5 basis points over the month — a modestly steeper curve.",
+    "Brent crude closed the week at $94.39, up 6.6% over the week and 55% year to date, with realized volatility running well above its own one-year norm — a choppy stretch for oil. Copper, by contrast, is quiet: it ended the week at 95% of its 52-week range with volatility below its usual level.",
+    "The dollar index slipped 0.8% on the week and is down 2.3% over the month, now sitting near the middle of its 52-week range."
   ],
   "stats": {
     "date": "2026-08-23",
     "tradingDay": false,
     "instruments": {
       "Bitcoin": {
-        "last": 76688.355,
+        "last": 76204.465,
         "tradedToday": true,
         "change": {
           "day": {
-            "abs": -1736.2696,
-            "pct": -2.21
+            "abs": -2220.1596,
+            "pct": -2.83
           },
           "week": {
-            "abs": 13671.2816,
-            "pct": 21.7
+            "abs": 13187.3916,
+            "pct": 20.93
           },
           "month": {
-            "abs": 11655.3329,
-            "pct": 17.92
+            "abs": 11171.4429,
+            "pct": 17.18
           },
           "threeMonths": {
-            "abs": 3.984,
-            "pct": 0.01
+            "abs": -479.906,
+            "pct": -0.63
           },
           "yearToDate": {
-            "abs": -11675.3672,
-            "pct": -13.21
+            "abs": -12159.2572,
+            "pct": -13.76
           }
         },
         "range52w": {
@@ -44,44 +45,8 @@
           "positionInRange": 0.27
         },
         "volatility": {
-          "annualizedPct": 40.8,
-          "vsOwnYearMedian": 1.24,
-          "regime": "normal"
-        }
-      },
-      "Gold": {
-        "last": 4680.6,
-        "tradedToday": false,
-        "change": {
-          "day": {
-            "abs": 164.3002,
-            "pct": 3.64
-          },
-          "week": {
-            "abs": 300.2001,
-            "pct": 6.85
-          },
-          "month": {
-            "abs": 533.7001,
-            "pct": 12.87
-          },
-          "threeMonths": {
-            "abs": 159.6,
-            "pct": 3.53
-          },
-          "yearToDate": {
-            "abs": 354.9999,
-            "pct": 8.21
-          }
-        },
-        "range52w": {
-          "high": 5318.3999,
-          "low": 3373.8,
-          "positionInRange": 0.67
-        },
-        "volatility": {
-          "annualizedPct": 23.3,
-          "vsOwnYearMedian": 0.96,
+          "annualizedPct": 41.5,
+          "vsOwnYearMedian": 1.26,
           "regime": "normal"
         }
       },
@@ -381,14 +346,6 @@
         "changeOverMonthBp": 4.8,
         "shape": "steepening"
       },
-      "goldOuncesPerBitcoin": {
-        "now": 15.62,
-        "changeOverMonthPct": -2.64
-      },
-      "copperToGoldRatioX1000": {
-        "now": 1.407,
-        "changeOverMonthPct": -9.53
-      },
       "dollarIndexOwnMove": {
         "dayPct": -0.06,
         "weekPct": -0.83
@@ -396,9 +353,9 @@
     }
   },
   "usage": {
-    "inputTokens": 3370,
-    "outputTokens": 638,
+    "inputTokens": 4122,
+    "outputTokens": 581,
     "cacheReadTokens": 0,
-    "cacheWriteTokens": 1153
+    "cacheWriteTokens": 0
   }
 }
