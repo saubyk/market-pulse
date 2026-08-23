@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { COLORS, FONTS } from "../lib/theme";
+import { COLORS } from "../lib/theme";
 import {
   STRIP_INSTRUMENTS,
   fetchCommentary,
@@ -93,30 +93,15 @@ export function Commentary({ now }: { now: Date }) {
             </div>
           ) : null}
           {stale ? (
-            <div
-              style={{
-                fontFamily: FONTS.display,
-                fontSize: 16,
-                lineHeight: 1.3,
-                color: COLORS.text,
-                marginBottom: 6,
-              }}
-            >
+            <div className="read-old-headline" style={{ color: COLORS.text }}>
               {note.headline}
             </div>
           ) : null}
+          {/* Sizes live in styles.css (.read-para): the display serif has a
+              small x-height, so it runs larger than body text, and the
+              mobile size differs — inline styles can't do breakpoints. */}
           {note.body.map((p, i) => (
-            <p
-              key={i}
-              style={{
-                fontFamily: FONTS.display,
-                fontSize: 15,
-                lineHeight: 1.45,
-                color: COLORS.text,
-                margin: "0 0 8px",
-                maxWidth: "72ch",
-              }}
-            >
+            <p key={i} className="read-para" style={{ color: COLORS.text }}>
               {p}
             </p>
           ))}
