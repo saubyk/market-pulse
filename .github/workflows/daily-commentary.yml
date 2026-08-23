@@ -1,20 +1,24 @@
-# Daily snapshot (and, from M3 on, LLM commentary) for the dashboard's
-# "Today's read" — see SPEC.md §3.6 and issue #6.
+# Daily snapshot + LLM-written commentary for the dashboard's "Today's
+# read" — see SPEC.md §3.6–3.8 and issue #6.
 #
 # Runs after the US bond-market close (21:00 UTC) so the day's closes are
 # in; GitHub cron can lag by some minutes, which is fine. Appends one line
-# to public/data/snapshots.jsonl and pushes the commit to main.
+# to public/data/snapshots.jsonl, builds the stats pack, asks Claude for
+# the day's note (public/data/commentary.json + commentary.jsonl), and
+# pushes the commit to main.
 #
 # Secrets (all optional — the job degrades rather than fails without them):
-#   MP_PROXY_TOKEN  lets scripts/snapshot.mjs reach Yahoo through the
-#                   Cloudflare worker when Yahoo blocks the runner's IP.
-#                   Must match `npx wrangler secret put MP_PROXY_TOKEN`.
+#   MP_PROXY_TOKEN     lets scripts/snapshot.mjs reach Yahoo through the
+#                      Cloudflare worker when Yahoo blocks the runner's IP.
+#                      Must match `npx wrangler secret put MP_PROXY_TOKEN`.
+#   ANTHROPIC_API_KEY  enables the commentary step. Without it the job
+#                      still records the snapshot and skips the note.
 #
 # The push below uses GITHUB_TOKEN, and pushes made with that token never
 # trigger other workflows — so the deploy is dispatched explicitly at the
 # end, which IS allowed for workflow_dispatch.
 
-name: Daily snapshot
+name: Daily snapshot and commentary
 
 on:
   schedule:
@@ -40,6 +44,12 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: "20"
+          cache: "npm"
+
+      # The Anthropic SDK is a devDependency used only by the commentary
+      # step; it never enters the Vite bundle.
+      - name: Install dependencies
+        run: npm ci
 
       - name: Unit tests
         run: npm test
@@ -47,19 +57,27 @@ jobs:
       - name: Take snapshot
         env:
           MP_PROXY_TOKEN: ${{ secrets.MP_PROXY_TOKEN }}
-        run: node scripts/snapshot.mjs
+        run: node scripts/snapshot.mjs --history-out "$RUNNER_TEMP/history.json"
+
+      - name: Build stats pack
+        run: node scripts/stats.mjs --history "$RUNNER_TEMP/history.json" --out "$RUNNER_TEMP/stats.json"
+
+      - name: Generate commentary
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: node scripts/commentary.mjs --stats "$RUNNER_TEMP/stats.json"
 
       - name: Commit and push
         id: commit
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add public/data/snapshots.jsonl
+          git add public/data/
           if git diff --cached --quiet; then
             echo "No changes."
             echo "pushed=false" >> "$GITHUB_OUTPUT"
           else
-            git commit -m "Daily snapshot $(date -u +%F)"
+            git commit -m "Daily snapshot and commentary $(date -u +%F)"
             git pull --rebase origin main
             git push origin HEAD:main
             echo "pushed=true" >> "$GITHUB_OUTPUT"

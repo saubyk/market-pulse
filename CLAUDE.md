@@ -12,7 +12,7 @@ npm run preview       # serve dist/
 npm test              # node --test over scripts/*.test.mjs (CI scripts only)
 ```
 
-There is no linter; `npm run build` (which runs `tsc -b`) is the correctness check for the app. `npm test` covers only the pure CI-script modules in `scripts/` (`snapshot-lib.mjs`, `trends.mjs`) — the React app itself has no test suite. `scripts/` is plain ESM JavaScript run by Node 20 in CI; don't add TypeScript there.
+There is no linter; `npm run build` (which runs `tsc -b`) is the correctness check for the app. `npm test` covers only the pure CI-script modules in `scripts/` (`snapshot-lib.mjs`, `trends.mjs`, `commentary-lib.mjs`) — the React app itself has no test suite. `scripts/` is plain ESM JavaScript run by Node 20 in CI; don't add TypeScript there.
 
 The Yahoo CORS proxy worker deploys separately (not part of any CI): `cd worker && npx wrangler deploy`. Test it locally with `npx wrangler dev` (no Cloudflare auth needed).
 
@@ -20,7 +20,7 @@ The Yahoo CORS proxy worker deploys separately (not part of any CI): `cd worker 
 
 - **Stay clone-and-run.** `npm install && npm run dev`/`npm run build` must work with no config edits, no API keys, no env vars. The default build must stay root-relative — never set Vite's `base` in `vite.config.ts`. The satusd.com integration is opt-in via `build:satusd` (see Deployment).
 - **SPEC.md is the source of truth** for behavior, data sources, design tokens, and scope (§11 lists what not to build). When a change alters behavior, update SPEC.md and README.md in the same commit — past commits deliberately keep them reconciled.
-- **Keep it flat and dependency-free.** React + Vite only: no chart libraries, no axios/react-query, no state management, no `src/hooks/` or `src/utils/` directories. Sparkline is hand-rolled SVG.
+- **Keep it flat and dependency-free.** React + Vite only: no chart libraries, no axios/react-query, no state management, no `src/hooks/` or `src/utils/` directories. Sparkline is hand-rolled SVG. The one exception is `@anthropic-ai/sdk`, a devDependency used solely by `scripts/commentary.mjs` in CI — it must never be imported from `src/`.
 
 ## Deployment
 
@@ -30,7 +30,7 @@ There is no deploy step for the standalone flavor: `npm run build` produces a ro
 
 The Cloudflare Worker in `worker/` is deployed manually (`npx wrangler deploy`), not by CI — editing `worker/index.js` does nothing in production until someone redeploys it.
 
-`.github/workflows/daily-commentary.yml` runs `scripts/snapshot.mjs` daily (cron 21:30 UTC), commits `public/data/snapshots.jsonl` to `main`, and then dispatches `deploy-satusd.yml` explicitly — pushes made with `GITHUB_TOKEN` never trigger other workflows. The script reaches Yahoo through the worker's token path (`X-MP-Token` = `MP_PROXY_TOKEN` secret, set both on the worker and in the repo). `scripts/stats.mjs` (pure logic in `scripts/trends.mjs`, SPEC §3.7) turns the snapshot's history dump + the log into the stats pack the commentary will be generated from. This pipeline must never change the dashboard's own fetching (`src/lib/fetchers.ts`, `range=1mo`, 30-day sparkline); see SPEC.md §3.6 and issue #6 for the plan it belongs to.
+`.github/workflows/daily-commentary.yml` runs `scripts/snapshot.mjs` daily (cron 21:30 UTC), commits `public/data/` to `main`, and then dispatches `deploy-satusd.yml` explicitly — pushes made with `GITHUB_TOKEN` never trigger other workflows. The script reaches Yahoo through the worker's token path (`X-MP-Token` = `MP_PROXY_TOKEN` secret, set both on the worker and in the repo). `scripts/stats.mjs` (pure logic in `scripts/trends.mjs`, SPEC §3.7) turns the snapshot's history dump + the log into the stats pack, and `scripts/commentary.mjs` (SPEC §3.8) sends it to `claude-fable-5` — no `thinking` param (always on for Fable 5), `effort: medium`, JSON-schema output, refusal fallbacks on — writing `public/data/commentary.json` + `.jsonl`. It needs the `ANTHROPIC_API_KEY` repo secret and skips cleanly without it. The system prompt in `commentary-lib.mjs` is frozen for prompt caching: never interpolate dates or run-specific values into it. This pipeline must never change the dashboard's own fetching (`src/lib/fetchers.ts`, `range=1mo`, 30-day sparkline); see SPEC.md §3.6 and issue #6 for the plan it belongs to.
 
 ## Architecture
 

@@ -29,6 +29,7 @@ A minimal, browser-only dashboard that displays financial instruments side-by-si
 | Layer | Choice | Reason |
 |---|---|---|
 | Build tool | **Vite** | Fastest cold start, simple static output. |
+| CI scripts | **Node 20, plain ESM** + `@anthropic-ai/sdk` (devDependency) | The daily snapshot/commentary job (§3.6–3.8). The SDK never enters the browser bundle. |
 | Framework | **React 18 + TypeScript** | Component model fits the eight-tile layout; TS catches the kinds of bugs that show up in API parsing. |
 | Styling | **Plain CSS or inline styles** | The design is custom and small; a utility framework is overkill. Tailwind is acceptable if the implementer prefers it. |
 | State | **`useState` + `useEffect`** | No global state needed. |
@@ -201,6 +202,38 @@ Record shape (`null` for any source that failed that day; failed keys are listed
 - `dollar` — DXY's own `d1` and `w1`, to be read alongside the four dollar-priced instruments' moves.
 
 **Pack-level:** `date`, `asOf`, `tradingDay` (any *exchange-traded* instrument — copper, Brent, the yields, gold, DXY — printed a bar today; FX pairs quote 24/5 and print on Sunday evenings, and BTC never stops, so they don't count. The prompt uses it to avoid narrating movement on a weekend or holiday), `barsPerInstrument` (how much history each stat rests on).
+
+### 3.8 Daily commentary (LLM-written, in CI)
+
+`scripts/commentary.mjs` turns the stats pack into the day's note. It runs as the last data step of `daily-commentary.yml`, after `snapshot.mjs` and `stats.mjs`. The pure parts — the frozen system prompt, the rendering of the pack into the user turn, the output schema, validation, the document shape — live in `scripts/commentary-lib.mjs` and are covered by `npm test`.
+
+**Model and request.** `claude-fable-5` through `@anthropic-ai/sdk` (a devDependency; CI-only, never in the Vite bundle). Fable 5's thinking is always on, so no `thinking` parameter is sent; depth is `output_config.effort: "medium"`, `max_tokens` 4000. The answer is constrained by `output_config.format` to a JSON schema `{headline, body: string[2..4]}`, so there is no prose parsing. Server-side refusal fallbacks are enabled (`fallbacks: "default"` under the `server-side-fallback-2026-07-01` beta): a classifier decline is re-run on Anthropic's recommended fallback within the same call, and **whichever model actually answered is recorded** in the output's `model` field. The system prompt is a single cached block (`cache_control`) and contains nothing date-dependent; everything that changes daily is in the user turn.
+
+**What the model is given** — only the stats pack (§3.7), rounded to reader precision and renamed to display names (`promptFacts()`). The system prompt forbids outside knowledge, causes, forecasts and advice; requires a horizon on every figure; says to lead with what moved rather than tour every instrument; and, when `tradingDay` is false, to say so and describe the week or month instead of inventing a session. Two to four short paragraphs, ~120–220 words.
+
+**Outputs** (both in `public/`, committed daily):
+- `public/data/commentary.json` — the latest note, what the dashboard fetches (§5.7, milestone 4):
+
+```json
+{
+  "date": "2026-08-21",
+  "generatedAt": 1787440000000,
+  "model": "claude-fable-5",
+  "tradingDay": true,
+  "headline": "Yields edge lower as gold pushes toward its yearly high",
+  "body": ["…", "…"],
+  "stats": { "…the promptFacts rendering of the pack…" },
+  "usage": { "inputTokens": 3100, "outputTokens": 420, "cacheReadTokens": 2600, "cacheWriteTokens": null }
+}
+```
+
+- `public/data/commentary.jsonl` — every day's document, one per line, same replace-by-date rule as the snapshot log.
+
+**Failure behaviour.** No `ANTHROPIC_API_KEY` (forks, local runs): prints a notice and exits 0 — the snapshot still commits. A refusal that survives the fallback chain, a truncated answer, non-JSON, or a note that fails validation (empty headline, < 40 or > 400 words, > 5 paragraphs): exits 1 with the offending text in the log, nothing is written, and the previous day's `commentary.json` stays in place — the dashboard's staleness display (§5.7) is the user-facing signal. `node scripts/commentary.mjs --stats stats.json --dry-run` prints the exact prompt without calling the API.
+
+**Cost.** ~3–4K input tokens (mostly the cached system prompt) and ~500 output per day ≈ $2/month at Fable 5 rates. Per-run token usage is logged and stored in the document.
+
+**Org requirement.** Fable 5 requires 30-day data retention; an organization configured for zero data retention gets `400 invalid_request_error` on every request.
 
 ---
 
@@ -385,7 +418,9 @@ market-pulse/
 ├── public/
 │   ├── favicon.svg        // shared satusd.com brand mark
 │   └── data/
-│       └── snapshots.jsonl // one line per day, appended by CI (§3.6)
+│       ├── snapshots.jsonl  // one line per day, appended by CI (§3.6)
+│       ├── commentary.json  // latest LLM-written note (§3.8)
+│       └── commentary.jsonl // every note, one per line
 ├── worker/
 │   ├── index.js           // Cloudflare Worker: pinned Yahoo CORS proxy (primary)
 │   └── wrangler.toml
@@ -395,10 +430,13 @@ market-pulse/
 │   ├── snapshot.test.mjs  // `npm test`
 │   ├── trends.mjs         // pure trend statistics; see §3.7
 │   ├── trends.test.mjs
-│   └── stats.mjs          // CLI: history dump + snapshot log → stats pack
+│   ├── stats.mjs          // CLI: history dump + snapshot log → stats pack
+│   ├── commentary.mjs     // CLI: stats pack → Claude → commentary.json; see §3.8
+│   ├── commentary-lib.mjs // prompt, schema, validation, document shape
+│   └── commentary.test.mjs
 ├── .github/workflows/
 │   ├── deploy-satusd.yml  // build + push dist/ into saubyk/satusd.com
-│   └── daily-commentary.yml // cron: scripts/snapshot.mjs → commit → dispatch deploy
+│   └── daily-commentary.yml // cron: snapshot → stats → commentary → commit → dispatch deploy
 ├── package.json
 ├── tsconfig.json
 ├── vite.config.ts
