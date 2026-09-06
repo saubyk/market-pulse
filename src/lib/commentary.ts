@@ -40,12 +40,54 @@ export type CommentaryStats = {
 // included, so anything older than this means the pipeline is broken.
 export const STALE_AFTER_DAYS = 3;
 
-export async function fetchCommentary(): Promise<Commentary | null> {
-  const url = `${import.meta.env.BASE_URL}data/commentary.json`;
+// Where a self-hosted copy looks for a fresher note when its own file is
+// behind (issue #9): the copy the CI job commits to upstream `main`.
+// raw.githubusercontent.com answers with `Access-Control-Allow-Origin: *`,
+// so the browser reads it directly — no proxy. A fork that runs its own
+// job should point this at its repo; set it to "" to keep the panel
+// strictly on its own origin.
+export const COMMENTARY_REMOTE_URL =
+  "https://raw.githubusercontent.com/saubyk/market-pulse/main/public/data/commentary.json";
+
+// How often an open tab re-checks for a newer note. The job runs once a
+// day, so anything finer than this only costs requests.
+export const REFRESH_MS = 60 * 60_000;
+
+export async function fetchCommentaryFrom(url: string): Promise<Commentary | null> {
   const res = await fetch(url);
   if (!res.ok) return null;
   const data = await res.json();
   return isCommentary(data) ? data : null;
+}
+
+export async function fetchCommentary(): Promise<Commentary | null> {
+  return fetchCommentaryFrom(`${import.meta.env.BASE_URL}data/commentary.json`);
+}
+
+// The note to show: the site's own file, or the upstream copy when that
+// is newer. An absent local file still means "no panel" — a fork that
+// has never run the job must not display someone else's note — and the
+// remote is only asked for when the local note is not today's, so a
+// deploy that refreshes daily never makes the extra request once its
+// job has run. Remote failures are silent: the local note is the floor.
+export async function loadCommentary(now: Date): Promise<Commentary | null> {
+  const local = await fetchCommentary();
+  if (!local) return null;
+  if (!needsRemote(local, now) || !COMMENTARY_REMOTE_URL) return local;
+  const remote = await fetchCommentaryFrom(COMMENTARY_REMOTE_URL).catch(() => null);
+  return newerNote(local, remote);
+}
+
+// Whether the local note is old enough to be worth checking upstream:
+// anything not dated on today's UTC day.
+export function needsRemote(local: Commentary | null, now: Date): boolean {
+  return local != null && commentaryAgeDays(local.date, now) > 0;
+}
+
+// Prefer the newer note; ties go to the local one, since it is the copy
+// this very site was built with.
+export function newerNote(local: Commentary, remote: Commentary | null): Commentary {
+  return remote != null && remote.date > local.date ? remote : local;
 }
 
 function isCommentary(d: unknown): d is Commentary {

@@ -1,36 +1,47 @@
 import { useEffect, useState } from "react";
 import { COLORS } from "../lib/theme";
 import {
+  REFRESH_MS,
   STRIP_INSTRUMENTS,
-  fetchCommentary,
   fmtMove,
   fmtNoteDate,
   isStale,
+  loadCommentary,
   loadOpen,
   saveOpen,
   type Commentary as Note,
 } from "../lib/commentary";
 
-// "Today's read": the day's LLM-written note, fetched once from the
-// site's own origin. Collapsed to one row by default so the one-viewport
-// layout is untouched; the row hides entirely when there is no note
-// (a fresh clone, a 404) and says so honestly when the note is old.
-// Hover and the breakpoint-dependent strip live in styles.css (.read-*).
+// "Today's read": the day's LLM-written note, loaded from the site's own
+// origin — or from upstream when that copy is newer, so a self-hosted
+// checkout that is behind still shows the current note (issue #9) — and
+// re-checked hourly so an open tab rolls over. Collapsed to one row by
+// default so the one-viewport layout is untouched; the row hides entirely
+// when there is no note (a fresh clone, a 404) and says so honestly when
+// the note is old. Hover and the breakpoint-dependent strip live in
+// styles.css (.read-*).
 export function Commentary({ now }: { now: Date }) {
   const [note, setNote] = useState<Note | null | undefined>(undefined);
   const [open, setOpen] = useState<boolean>(loadOpen);
 
   useEffect(() => {
     let cancelled = false;
-    fetchCommentary()
-      .then((n) => {
-        if (!cancelled) setNote(n);
-      })
-      .catch(() => {
-        if (!cancelled) setNote(null);
-      });
+    function load() {
+      loadCommentary(new Date())
+        .then((n) => {
+          if (!cancelled) setNote(n);
+        })
+        .catch(() => {
+          // A failed first load hides the row; a failed re-check keeps
+          // whatever note is already showing.
+          if (!cancelled) setNote((prev) => prev ?? null);
+        });
+    }
+    load();
+    const id = setInterval(load, REFRESH_MS);
     return () => {
       cancelled = true;
+      clearInterval(id);
     };
   }, []);
 

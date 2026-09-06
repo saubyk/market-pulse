@@ -366,7 +366,9 @@ A segmented `USD · CAD · INR` control in the header eyebrow, left of the theme
 
 ### 5.7 Today's read (daily commentary panel)
 
-`components/Commentary.tsx`, rendered between the header divider and the first section. On mount it fetches `${import.meta.env.BASE_URL}data/commentary.json` once — a static file on the site's own origin, produced by the CI job in §3.8, so there is no proxy, no key and no polling. The fetch is base-aware so the satusd.com sub-route deploy resolves it correctly.
+`components/Commentary.tsx`, rendered between the header divider and the first section. On mount it fetches `${import.meta.env.BASE_URL}data/commentary.json` — a static file on the site's own origin, produced by the CI job in §3.8, so there is no proxy and no key. The fetch is base-aware so the satusd.com sub-route deploy resolves it correctly.
+
+**Self-hosted copies** (issue #9): that file only changes when the checkout or build does, so a dev server or a locally served `dist/` would otherwise show whatever note it was last pulled with. If the local note is not dated today (UTC), the component also fetches the canonical copy — `COMMENTARY_REMOTE_URL` in `lib/commentary.ts`, the file the job commits to upstream `main`, served by raw.githubusercontent.com with `Access-Control-Allow-Origin: *` — and shows whichever is newer, local on ties. The rules that keep this honest: a **missing** local file still means no panel (a fork that has never run the job must not display upstream's note); the remote is never asked for once the local note is today's, so a deploy that refreshes daily makes no extra request after its job has run; a remote failure is silent and the local note stands. Forks running their own job point the constant at their repo, or set it to `""` to stay strictly on their own origin. The check repeats every `REFRESH_MS` (one hour) so a tab left open rolls over to the new day's note without a reload; a failed re-check keeps the note already showing.
 
 **Collapsed (default):** one row — `TODAY'S READ — <headline> ▾` — eyebrow micro-type for the label, the headline in body text with an ellipsis if it overflows (wrapping at ≤640px). This is the only vertical cost in the default state, keeping the one-viewport layout of §5.1.
 
@@ -430,6 +432,7 @@ Each tile manages its own loading/error state. A failure in one fetch must never
 | Selected currency's FX rate unavailable | The four convertible tiles fall back to displaying USD — with the `$` prefix, so nothing is mislabeled — and the footer reads `USD/CAD rate unavailable — showing USD`. Yields, DXY and USD/JPY are unaffected, as they never convert. |
 | Network offline | Already-loaded tiles freeze on their last values (timestamps stop advancing); a tile still mid-first-load shows "fetch failed". No popups, no toasts. |
 | `commentary.json` missing / unparsable | The Today's read row does not render at all. Nothing else is affected. |
+| Local `commentary.json` present but behind upstream (a self-hosted checkout not pulled today) | The row shows the upstream note when it is newer, re-checking hourly. If the upstream fetch fails, the local note stands. |
 | Daily commentary job broken (note > 3 days old) | The row reads `no commentary since <date>` and the expanded view flags the last note's date in red; the old text remains readable but is never presented as today's. |
 
 Within a tick the fetcher rotates proxies and retries once; across ticks the 5-minute polling interval is the longer-horizon retry.
