@@ -13,12 +13,15 @@
 // to Friday's session) is skipped without calling the API — pass --force
 // to regenerate it.
 //
-// Model: claude-fable-5. Thinking is always on for this model — the
-// `thinking` parameter is deliberately omitted — and depth is set with
-// output_config.effort. Server-side refusal fallbacks are enabled so a
-// classifier decline (HTTP 200, stop_reason "refusal") is re-run on
-// Anthropic's recommended fallback inside the same call; whichever model
-// actually answered is recorded in the output as `model`.
+// Model: claude-fable-5-1 (Fable 5 until 2026-09-06 — same surface, same
+// per-token price). Thinking is always on for this model — the `thinking`
+// parameter is deliberately omitted — and depth is set with
+// output_config.effort. No tool_choice is sent (Fable 5.1 rejects forced
+// tool use; the JSON comes from output_config.format instead). Server-
+// side refusal fallbacks are enabled so a classifier decline (HTTP 200,
+// stop_reason "refusal") is re-run on Anthropic's recommended fallback
+// inside the same call; whichever model actually answered is recorded in
+// the output as `model`.
 
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { dirname } from "node:path";

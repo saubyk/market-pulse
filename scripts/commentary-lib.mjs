@@ -3,7 +3,7 @@
 // JSON schema the model must answer in, validation of what comes back,
 // and the shape of the committed documents. No I/O, no network.
 
-export const MODEL = "claude-fable-5";
+export const MODEL = "claude-fable-5-1";
 export const MAX_TOKENS = 4000;
 export const EFFORT = "high";
 

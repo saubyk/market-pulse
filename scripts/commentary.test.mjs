@@ -131,13 +131,13 @@ test("buildDocument records model, trimmed text, facts and usage", () => {
   const doc = buildDocument({
     pack: pack(),
     output: { headline: "  Gold edges higher ", body: [" one ", "two"] },
-    model: "claude-fable-5",
+    model: "claude-fable-5-1",
     usage: { input_tokens: 3000, output_tokens: 400, cache_read_input_tokens: 2500 },
     generatedAt: 123,
   });
   assert.equal(doc.date, "2026-08-21");
   assert.equal(doc.generatedAt, 123);
-  assert.equal(doc.model, "claude-fable-5");
+  assert.equal(doc.model, "claude-fable-5-1");
   assert.equal(doc.headline, "Gold edges higher");
   assert.deepEqual(doc.body, ["one", "two"]);
   assert.equal(doc.stats.instruments.Gold.last, 100.1235);
