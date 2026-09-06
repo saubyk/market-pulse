@@ -8,8 +8,11 @@
 //
 // Fetches a year of daily closes for the nine Yahoo symbols (seven tiles
 // + the two currency-picker rates) plus BTC spot / 24h reference, and
-// upserts one JSON line for today's UTC date into public/data/
-// snapshots.jsonl. Re-running on the same day replaces that day's line.
+// upserts one JSON line into public/data/snapshots.jsonl for the last
+// *settled* exchange session — dated by that session, not by the clock,
+// so a run that GitHub delays past midnight (or one on a weekend or a
+// holiday) still describes the right day and never claims the next one.
+// Re-running for the same session replaces that session's line.
 //
 // Yahoo is tried directly first (no CORS concern server-side). GitHub's
 // runners are datacenter IPs Yahoo often blocks, so the second hop is our
@@ -28,7 +31,9 @@ import {
   YAHOO_SYMBOLS,
   buildRecord,
   parseYahooChart,
+  sessionDate,
   upsertRecord,
+  utcDate,
   yahooChartUrl,
 } from "./snapshot-lib.mjs";
 
@@ -78,12 +83,12 @@ function yahooAttempts(target) {
   return attempts;
 }
 
-async function fetchYahoo(key) {
+async function fetchYahoo(key, asOf) {
   const target = yahooChartUrl(YAHOO_SYMBOLS[key]);
   const failures = [];
   for (const a of yahooAttempts(target)) {
     try {
-      const q = parseYahooChart(key, await getJson(a.url, a.headers));
+      const q = parseYahooChart(key, await getJson(a.url, a.headers), asOf);
       if (!q) throw new Error("empty/invalid result");
       return { quote: q, via: a.label };
     } catch (e) {
@@ -144,10 +149,10 @@ async function main() {
   // bursts from one IP, and there is no hurry in a daily job.
   for (const key of YAHOO_KEYS) {
     try {
-      const { quote, via } = await fetchYahoo(key);
+      const { quote, via } = await fetchYahoo(key, asOf);
       quotes[key] = quote;
       history[key] = quote.history;
-      console.log(`${key.padEnd(7)} ${String(quote.close).padEnd(12)} via ${via} (${quote.history.length} closes)`);
+      console.log(`${key.padEnd(7)} ${String(quote.close).padEnd(12)} ${quote.date ?? "-"} via ${via} (${quote.history.length} closes)`);
     } catch (e) {
       quotes[key] = null;
       errors.push(key);
@@ -168,7 +173,10 @@ async function main() {
     process.exit(1);
   }
 
-  const record = buildRecord({ asOf, quotes, btc, errors });
+  // The session this run describes. With every exchange fetch failed
+  // there is nothing to date it by, so fall back to the run's UTC date.
+  const date = sessionDate(quotes) ?? utcDate(asOf);
+  const record = buildRecord({ asOf, date, quotes, btc, errors });
   let existing = "";
   try {
     existing = await readFile(SNAPSHOT_PATH, "utf8");
@@ -177,11 +185,13 @@ async function main() {
   }
   await mkdir(dirname(SNAPSHOT_PATH), { recursive: true });
   await writeFile(SNAPSHOT_PATH, upsertRecord(existing, record));
-  console.log(`wrote ${record.date} to ${SNAPSHOT_PATH}${errors.length ? ` (errors: ${errors.join(", ")})` : ""}`);
+  console.log(
+    `wrote session ${record.date} (run ${new Date(asOf).toISOString()}) to ${SNAPSHOT_PATH}${errors.length ? ` (errors: ${errors.join(", ")})` : ""}`,
+  );
 
   if (historyOut) {
     await mkdir(dirname(historyOut), { recursive: true });
-    await writeFile(historyOut, JSON.stringify({ asOf, history }));
+    await writeFile(historyOut, JSON.stringify({ asOf, date, history }));
     console.log(`wrote 1y history to ${historyOut}`);
   }
 }

@@ -8,7 +8,7 @@
 // close at or before N days ago", so weekends and holidays never produce
 // a missing comparison, only a slightly older one.
 
-import { YAHOO_KEYS, utcDate } from "./snapshot-lib.mjs";
+import { EXCHANGE_KEYS, YAHOO_KEYS, dateStartMs, utcDate } from "./snapshot-lib.mjs";
 
 export const INSTRUMENT_KEYS = [...YAHOO_KEYS, "btc"];
 
@@ -16,10 +16,11 @@ export const INSTRUMENT_KEYS = [...YAHOO_KEYS, "btc"];
 // moves are reported in basis points as well as percent-of-level.
 export const YIELD_KEYS = new Set(["tnx", "tyx"]);
 
-// Instruments with an exchange session. FX pairs (jpy/cad/inr) quote
-// 24/5 and print on Sunday evenings, and BTC never stops, so "did markets
-// trade today" is judged on these alone.
-export const EXCHANGE_KEYS = new Set(["copper", "brent", "tnx", "tyx", "gold", "dxy"]);
+// Instruments with an exchange session (defined with the snapshot's
+// session table). FX pairs (jpy/cad/inr) quote 24/5 and print on Sunday
+// evenings, and BTC never stops, so "did markets trade" is judged on
+// these alone.
+export { EXCHANGE_KEYS };
 
 const DAY_MS = 86_400_000;
 const HORIZONS = { w1: 7, m1: 30, m3: 91 };
@@ -29,23 +30,35 @@ const TRADING_DAYS_PER_YEAR = 252;
 // Series construction
 
 // Daily series from the snapshot log for one key ("btc" uses spot).
-// Records with a null/failed entry are skipped. Yahoo bars are dated by
-// the quote's own timestamp (`ts`), not the run time: a Sunday run
-// re-records Friday's close, and it must land on Friday — otherwise it
-// would read as a flat "Sunday" session. BTC spot is live, so its bar is
-// dated by the run time.
+// Records with a null/failed entry are skipped. Exchange-traded bars are
+// dated by their own `ts` — the session end the snapshot settled them
+// at, which is on the session date by construction. The 24-hour
+// instruments (FX, BTC) have no session of their own and take the
+// record's session date, so a line written by a run that drifted past
+// midnight still reads as one day. Records without a date (none are
+// written any more) fall back to the run time.
 export function seriesFromSnapshots(records, key) {
   const out = [];
   for (const r of records) {
+    const recordMs = typeof r.date === "string" ? dateStartMs(r.date) : r.asOf;
     if (key === "btc") {
-      if (typeof r.btc?.spot === "number") out.push([r.asOf, r.btc.spot]);
+      if (typeof r.btc?.spot === "number") out.push([recordMs, r.btc.spot]);
       continue;
     }
     const q = r[key];
     if (typeof q?.close !== "number") continue;
-    out.push([typeof q.ts === "number" ? q.ts : r.asOf, q.close]);
+    const ms = EXCHANGE_KEYS.has(key) && typeof q.ts === "number" ? q.ts : recordMs;
+    out.push([ms, q.close]);
   }
   return normalize(out);
+}
+
+// Bars dated after `date` (a "YYYY-MM-DD" session date) are dropped: the
+// fetched history of a 24-hour instrument can already hold a live bar
+// for the day *after* the session the pack describes.
+export function cutAfter(series, date) {
+  const cutoff = dateStartMs(date) + DAY_MS - 1;
+  return series.filter((b) => b[0] <= cutoff);
 }
 
 // Merge two series by UTC date. Where both have a bar for the same date,
@@ -286,26 +299,33 @@ export function crossAssetStats(series) {
 // ---------------------------------------------------------------------
 // The stats pack: everything the commentary model is given.
 
+// `asOf`      — run time (unix ms)
+// `date`      — the session the pack describes ("YYYY-MM-DD", from the
+//               snapshot step); defaults to asOf's UTC date
 // `histories` — {key: series} from Yahoo/CoinGecko (may be missing keys)
 // `snapshots` — parsed snapshots.jsonl records (may be empty)
-export function buildStatsPack({ asOf, histories = {}, snapshots = [] }) {
+export function buildStatsPack({ asOf, date, histories = {}, snapshots = [] }) {
+  date ??= utcDate(asOf);
+  const dayEnd = dateStartMs(date) + DAY_MS - 1;
   const series = {};
   for (const key of INSTRUMENT_KEYS) {
     const own = seriesFromSnapshots(snapshots, key);
-    const merged = mergeSeries(own, histories[key]);
+    const merged = cutAfter(mergeSeries(own, histories[key]), date);
     if (merged.length) series[key] = merged;
   }
 
   const instruments = {};
   for (const key of INSTRUMENT_KEYS) {
-    instruments[key] = series[key] ? instrumentStats(key, series[key], asOf) : null;
+    instruments[key] = series[key] ? instrumentStats(key, series[key], dayEnd) : null;
   }
 
   return {
-    date: utcDate(asOf),
+    date,
     asOf,
-    // "Did markets trade today" for the prompt — exchange-traded
+    // "Did markets trade on `date`" for the prompt — exchange-traded
     // instruments only (FX prints on Sunday evenings; BTC never stops).
+    // With session dating this is true whenever an exchange bar exists
+    // for the date; it stays for manual runs against an arbitrary date.
     tradingDay: [...EXCHANGE_KEYS].some((k) => instruments[k]?.tradedToday),
     barsPerInstrument: Object.fromEntries(
       INSTRUMENT_KEYS.map((k) => [k, series[k]?.length ?? 0]),

@@ -4,10 +4,14 @@
 //   node scripts/stats.mjs --history h.json --out stats.json
 //   node scripts/commentary.mjs --stats stats.json            # writes public/data/commentary.json + .jsonl
 //   node scripts/commentary.mjs --stats stats.json --dry-run  # prints the prompt, calls nothing
+//   node scripts/commentary.mjs --stats stats.json --force    # rewrite even if the session has a note
 //
 // Runs in CI after the snapshot and stats steps. ANTHROPIC_API_KEY comes
 // from a repo secret; when it is absent (forks, local runs) the script
 // prints a notice and exits 0 so the snapshot pipeline still completes.
+// A session that already has a note (a weekend or holiday run resolves
+// to Friday's session) is skipped without calling the API — pass --force
+// to regenerate it.
 //
 // Model: claude-fable-5. Thinking is always on for this model — the
 // `thinking` parameter is deliberately omitted — and depth is set with
@@ -28,6 +32,7 @@ import {
   OUTPUT_SCHEMA,
   SYSTEM_PROMPT,
   buildDocument,
+  noteExistsFor,
   responseText,
   upsertArchive,
   userMessage,
@@ -104,6 +109,17 @@ async function main() {
     return;
   }
 
+  let archive = "";
+  try {
+    archive = await readFile(ARCHIVE_PATH, "utf8");
+  } catch (e) {
+    if (e.code !== "ENOENT") throw e;
+  }
+  if (!process.argv.includes("--force") && noteExistsFor(archive, pack.date)) {
+    console.log(`session ${pack.date} already has a note — skipping (pass --force to regenerate).`);
+    return;
+  }
+
   if (!process.env.ANTHROPIC_API_KEY) {
     console.log("ANTHROPIC_API_KEY not set — skipping commentary generation.");
     return;
@@ -115,12 +131,6 @@ async function main() {
 
   await mkdir(dirname(COMMENTARY_PATH), { recursive: true });
   await writeFile(COMMENTARY_PATH, JSON.stringify(doc, null, 2) + "\n");
-  let archive = "";
-  try {
-    archive = await readFile(ARCHIVE_PATH, "utf8");
-  } catch (e) {
-    if (e.code !== "ENOENT") throw e;
-  }
   await writeFile(ARCHIVE_PATH, upsertArchive(archive, doc));
 
   const u = doc.usage ?? {};

@@ -1,10 +1,16 @@
 # Daily snapshot + LLM-written commentary for the dashboard's "Today's
 # read" — see SPEC.md §3.6–3.8 and issue #6.
 #
-# Runs after the US bond-market close (21:00 UTC) so the day's closes are
-# in; GitHub cron can lag by some minutes, which is fine. Appends one line
+# Scheduled for 22:13 UTC on weekdays: after the last US session close in
+# both summer (futures 21:00 UTC) and winter (22:00 UTC), off the top of
+# the hour where GitHub drops runs. GitHub delays scheduled runs on free
+# public repos by anything from minutes to hours (8h observed), so the
+# scripts never trust the clock: the snapshot records the last *settled*
+# session and dates its line by it (SPEC §3.6), and the commentary step
+# skips a session that already has a note (§3.8) — so a late, weekend or
+# holiday run is a cheap no-op rather than a wrong day. Appends one line
 # to public/data/snapshots.jsonl, builds the stats pack, asks Claude for
-# the day's note (public/data/commentary.json + commentary.jsonl), and
+# the session's note (public/data/commentary.json + commentary.jsonl), and
 # pushes the commit to main.
 #
 # Secrets (all optional — the job degrades rather than fails without them):
@@ -22,8 +28,13 @@ name: Daily snapshot and commentary
 
 on:
   schedule:
-    - cron: "30 21 * * *"
+    - cron: "13 22 * * 1-5"
   workflow_dispatch:
+    inputs:
+      regenerate:
+        description: "Rewrite the note even if the session already has one"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -72,7 +83,7 @@ jobs:
         continue-on-error: true
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-        run: node scripts/commentary.mjs --stats "$RUNNER_TEMP/stats.json"
+        run: node scripts/commentary.mjs --stats "$RUNNER_TEMP/stats.json" ${{ inputs.regenerate == true && '--force' || '' }}
 
       - name: Commit and push
         id: commit

@@ -204,6 +204,22 @@ export function buildDocument({ pack, output, model, usage, generatedAt }) {
   };
 }
 
+// Whether the archive already covers the session `date`: a note dated on
+// or after it. The job runs on weekends and holidays too (the snapshot
+// is cheap), but those runs resolve to the last settled session, which
+// was written up when it happened — so there is nothing new to say and
+// no reason to pay for a note (issue #8). Notes dated *after* the
+// session count as well, so an archive written under the old run-date
+// rule doesn't trigger a rewrite of a session it already described.
+export function noteExistsFor(text, date) {
+  for (const line of text.split("\n")) {
+    if (line.trim() === "") continue;
+    const d = JSON.parse(line).date;
+    if (typeof d === "string" && d >= date) return true;
+  }
+  return false;
+}
+
 // The archive keeps every day's note, one per line, same dedupe-by-date
 // rule as the snapshot log (a re-run replaces the day).
 export function upsertArchive(text, doc) {

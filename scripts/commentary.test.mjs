@@ -6,6 +6,7 @@ import {
   PROMPT_ORDER,
   SYSTEM_PROMPT,
   buildDocument,
+  noteExistsFor,
   promptFacts,
   responseText,
   upsertArchive,
@@ -157,6 +158,16 @@ test("upsertArchive replaces the same date and keeps order", () => {
   assert.equal(text, `${JSON.stringify(a)}\n${JSON.stringify(b)}\n`);
   text = upsertArchive(text, { date: "2026-08-21", headline: "b2" });
   assert.equal(text, `${JSON.stringify(a)}\n{"date":"2026-08-21","headline":"b2"}\n`);
+});
+
+test("noteExistsFor: a note dated on or after the session means nothing new to write", () => {
+  const archive =
+    `{"date":"2026-09-03","headline":"c"}\n` +
+    `\n{"date":"2026-09-05","headline":"weekend note under the old run-date rule"}\n`;
+  assert.equal(noteExistsFor(archive, "2026-09-04"), true); // covered by the 09-05 note
+  assert.equal(noteExistsFor(archive, "2026-09-05"), true);
+  assert.equal(noteExistsFor(archive, "2026-09-08"), false); // Tuesday after Labor Day: new session
+  assert.equal(noteExistsFor("", "2026-09-04"), false);
 });
 
 test("responseText returns the first text block or null", () => {

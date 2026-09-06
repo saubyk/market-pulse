@@ -38,15 +38,17 @@ async function main() {
   const outPath = arg("--out");
 
   let asOf = Date.now();
+  let date;
   let histories = {};
   if (historyPath) {
     const dump = JSON.parse(await readFile(historyPath, "utf8"));
     histories = dump.history ?? {};
     if (typeof dump.asOf === "number") asOf = dump.asOf;
+    if (typeof dump.date === "string") date = dump.date;
   }
   const snapshots = await readSnapshots();
 
-  const pack = buildStatsPack({ asOf, histories, snapshots });
+  const pack = buildStatsPack({ asOf, date, histories, snapshots });
   const json = JSON.stringify(pack, null, 2);
   if (outPath) {
     await mkdir(dirname(outPath), { recursive: true });

@@ -3,6 +3,7 @@ import { COLORS } from "../lib/theme";
 import {
   REFRESH_MS,
   STRIP_INSTRUMENTS,
+  commentaryAgeDays,
   fmtMove,
   fmtNoteDate,
   isStale,
@@ -51,6 +52,10 @@ export function Commentary({ now }: { now: Date }) {
 
   const stale = isStale(note, now);
   const noteDate = fmtNoteDate(note.date);
+  // Notes describe an exchange session, so on a weekend, a holiday or a
+  // weekday morning the current note is an earlier day's: say so in the
+  // label rather than calling Friday's read "today's".
+  const today = commentaryAgeDays(note.date, now) <= 0;
 
   function toggle() {
     const next = !open;
@@ -73,7 +78,9 @@ export function Commentary({ now }: { now: Date }) {
         aria-controls="todays-read"
         onClick={toggle}
       >
-        <span className="read-label">Today&rsquo;s read</span>
+        <span className="read-label">
+          {today ? <>Today&rsquo;s read</> : <>Last read &middot; {noteDate}</>}
+        </span>
         <span className="read-sep" aria-hidden="true">
           —
         </span>
@@ -100,7 +107,7 @@ export function Commentary({ now }: { now: Date }) {
                 marginBottom: 6,
               }}
             >
-              Last note is from {noteDate} — the daily job has not run since
+              Last note is from {noteDate} — no session since has been written up
             </div>
           ) : null}
           {stale ? (

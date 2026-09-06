@@ -4,6 +4,7 @@ import {
   buildStatsPack,
   closeAtOrBefore,
   crossAssetStats,
+  cutAfter,
   instrumentStats,
   medianRollingVol,
   mergeSeries,
@@ -37,14 +38,53 @@ function weekdays(n, fn, end = FRI) {
 const near = (a, b, tol = 1e-6) =>
   assert.ok(Math.abs(a - b) < tol, `${a} not within ${tol} of ${b}`);
 
-test("seriesFromSnapshots dates Yahoo bars by quote ts, btc by run time", () => {
+test("seriesFromSnapshots dates exchange bars by ts, the 24h instruments by the session date", () => {
   const recs = [
     { asOf: 2 * DAY, gold: { close: 2, ts: 2 * DAY - 5000 }, btc: { spot: 20 } },
     { asOf: 1 * DAY, gold: null, btc: { spot: null } },
-    { asOf: 3 * DAY, gold: { close: 3 }, btc: { spot: 30 } }, // no ts → asOf
+    { asOf: 3 * DAY, gold: { close: 3 }, btc: { spot: 30 } }, // no ts, no date → asOf
   ];
   assert.deepEqual(seriesFromSnapshots(recs, "gold"), [[2 * DAY - 5000, 2], [3 * DAY, 3]]);
   assert.deepEqual(seriesFromSnapshots(recs, "btc"), [[2 * DAY, 20], [3 * DAY, 30]]);
+
+  // A line written by a run that drifted to 05:31 UTC Tuesday describes
+  // Monday's session: gold's ts is Monday's settle, and the yen quote and
+  // BTC spot — which have no session — take the line's date too.
+  const mon = Date.UTC(2026, 7, 31);
+  const drifted = {
+    date: "2026-08-31",
+    asOf: mon + DAY + 5.5 * 3_600_000,
+    gold: { close: 9, ts: mon + 21 * 3_600_000 },
+    jpy: { close: 150, ts: mon + DAY + 5 * 3_600_000 },
+    btc: { spot: 70000 },
+  };
+  assert.deepEqual(seriesFromSnapshots([drifted], "gold"), [[mon + 21 * 3_600_000, 9]]);
+  assert.deepEqual(seriesFromSnapshots([drifted], "jpy"), [[mon, 150]]);
+  assert.deepEqual(seriesFromSnapshots([drifted], "btc"), [[mon, 70000]]);
+});
+
+test("cutAfter drops bars dated after the session", () => {
+  const mon = Date.UTC(2026, 7, 31);
+  const s = [[mon - DAY, 1], [mon + 23 * 3_600_000, 2], [mon + DAY, 3]];
+  assert.deepEqual(cutAfter(s, "2026-08-31"), [[mon - DAY, 1], [mon + 23 * 3_600_000, 2]]);
+  assert.deepEqual(cutAfter(s, "2026-08-29"), []);
+});
+
+test("a session-dated pack ignores the 24h instruments' bars from after the session", () => {
+  // Run drifted into Saturday: CoinGecko's daily history already has a
+  // Saturday bar and the FX history a live one; the pack is Friday's.
+  const hist = {
+    gold: weekdays(10, (i) => 100 + i),
+    btc: [...weekdays(10, (i) => 1000 + i), [FRI + DAY, 5000]],
+    jpy: [...weekdays(10, () => 150), [FRI + DAY, 999]],
+  };
+  const pack = buildStatsPack({ asOf: FRI + DAY + 3_600_000, date: "2026-08-21", histories: hist });
+  assert.equal(pack.date, "2026-08-21");
+  assert.equal(pack.instruments.btc.last, 1009);
+  assert.equal(pack.instruments.jpy.last, 150);
+  assert.equal(pack.instruments.gold.tradedToday, true);
+  assert.equal(pack.tradingDay, true);
+  assert.equal(pack.barsPerInstrument.btc, 10);
 });
 
 test("a weekend snapshot of Friday's close lands on Friday, not the weekend", () => {

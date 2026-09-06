@@ -30,9 +30,15 @@ test("commentaryAgeDays counts whole UTC days regardless of time of day", () => 
   assert.equal(commentaryAgeDays("2026-08-23", NOW), 14);
 });
 
-test("isStale flips after STALE_AFTER_DAYS whole days", () => {
-  assert.equal(isStale(note("2026-09-03"), NOW), false);
-  assert.equal(isStale(note("2026-09-02"), NOW), true);
+test("isStale flips after STALE_AFTER_DAYS whole days: Friday's note lasts through a Monday holiday", () => {
+  // NOW is Sunday 09-06. Friday 09-04's note is current all weekend, on
+  // Monday (holiday) and on Tuesday until that session's note lands.
+  const tuesday = new Date(Date.UTC(2026, 8, 8, 8));
+  assert.equal(isStale(note("2026-09-04"), tuesday), false);
+  const wednesday = new Date(Date.UTC(2026, 8, 9, 8));
+  assert.equal(isStale(note("2026-09-04"), wednesday), true);
+  assert.equal(isStale(note("2026-09-02"), NOW), false);
+  assert.equal(isStale(note("2026-09-01"), NOW), true);
 });
 
 test("needsRemote: only a local note that is not today's triggers the upstream check", () => {

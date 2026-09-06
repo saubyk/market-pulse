@@ -36,9 +36,11 @@ export type CommentaryStats = {
 };
 
 // After this many days without a fresh note the panel says so instead of
-// presenting the old text as today's. The job runs every day, weekends
-// included, so anything older than this means the pipeline is broken.
-export const STALE_AFTER_DAYS = 3;
+// presenting the old text as today's. Notes are written per exchange
+// session, so Friday's is current through the weekend and a Monday
+// holiday: Friday to Tuesday is 4 whole days, and anything older means
+// the pipeline is broken.
+export const STALE_AFTER_DAYS = 4;
 
 // Where a self-hosted copy looks for a fresher note when its own file is
 // behind (issue #9): the copy the CI job commits to upstream `main`.
