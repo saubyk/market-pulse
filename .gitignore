@@ -1,5 +1,8 @@
 node_modules
 dist
+
+# compiled from notes/*.md by scripts/notes.mjs at dev/build time
+public/data/notes.json
 .DS_Store
 *.local
 .vite

@@ -5,14 +5,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ```bash
-npm run dev           # dev server at http://localhost:5173
-npm run build         # tsc -b + vite build → root-relative static bundle in dist/
+npm run dev           # compiles notes/ then dev server at http://localhost:5173
+npm run build         # notes.mjs + tsc -b + vite build → root-relative static bundle in dist/
 npm run build:satusd  # same build with --base=/market-pulse/ (satusd.com sub-route deploy only)
 npm run preview       # serve dist/
 npm test              # node --test over scripts/*.test.mjs and src/lib/*.test.ts (needs Node 22+)
 ```
 
-There is no linter; `npm run build` (which runs `tsc -b`) is the type check. `npm test` is Node's built-in runner over the pure CI-script modules in `scripts/` (`snapshot-lib.mjs`, `trends.mjs`, `commentary-lib.mjs`) and the pure parts of `src/lib/` (`*.test.ts`, run through Node's type stripping — keep tested modules free of enums/namespaces/parameter properties, and import siblings with the `.ts` extension in test files). Components have no tests. `scripts/` is plain ESM JavaScript; don't add TypeScript there. Both workflows run `npm test` on Node 22.
+There is no linter; `npm run build` (which runs `tsc -b`) is the type check. `npm test` is Node's built-in runner over the pure CI-script modules in `scripts/` (`snapshot-lib.mjs`, `trends.mjs`, `commentary-lib.mjs`, `notes-lib.mjs`) and the pure parts of `src/lib/` (`*.test.ts`, run through Node's type stripping — keep tested modules free of enums/namespaces/parameter properties, and import siblings with the `.ts` extension in test files). Components have no tests. `scripts/` is plain ESM JavaScript; don't add TypeScript there. Both workflows run `npm test` on Node 22.
 
 The Yahoo CORS proxy worker deploys separately (not part of any CI): `cd worker && npx wrangler deploy`. Test it locally with `npx wrangler dev` (no Cloudflare auth needed).
 
@@ -34,7 +34,7 @@ The Cloudflare Worker in `worker/` is deployed manually (`npx wrangler deploy`),
 
 ## Architecture
 
-Static SPA, no backend. Eight tiles (BTC, Gold, Copper, Brent, 10Y, 30Y, USD/JPY, DXY) in four sections. All state lives in `src/App.tsx` as one `useState<TileState>` per tile; each tile's fetch loop is fully independent so one failure never touches another tile. The only other stateful piece is `components/Commentary.tsx` ("Today's read", SPEC §5.7): it fetches `public/data/commentary.json` from the site's own origin via `import.meta.env.BASE_URL`, renders nothing when the file is absent, labels a note not dated today `LAST READ · <date>`, and flags notes older than 4 days as stale. When the local note is not today's it also fetches the upstream copy (`COMMENTARY_REMOTE_URL`, raw.githubusercontent.com, CORS-open) and shows the newer of the two, re-checking hourly — that is what keeps a self-hosted checkout current (issue #9); an absent local file must still mean no panel. It must stay collapsed by default — the one-viewport layout budget allows it exactly one row.
+Static SPA, no backend. Eight tiles (BTC, Gold, Copper, Brent, 10Y, 30Y, USD/JPY, DXY) in four sections. All state lives in `src/App.tsx` as one `useState<TileState>` per tile; each tile's fetch loop is fully independent so one failure never touches another tile. The only other stateful piece is `components/Commentary.tsx` ("Today's read", SPEC §5.7): it fetches `public/data/commentary.json` from the site's own origin via `import.meta.env.BASE_URL`, renders nothing when the file is absent, labels a note not dated today `LAST READ · <date>`, and flags notes older than 4 days as stale. When the local note is not today's it also fetches the upstream copy (`COMMENTARY_REMOTE_URL`, raw.githubusercontent.com, CORS-open) and shows the newer of the two, re-checking hourly — that is what keeps a self-hosted checkout current (issue #9); an absent local file must still mean no panel. It must stay collapsed by default — the one-viewport layout budget allows it exactly one row. `components/EditorNote.tsx` (SPEC §5.8) is the same shape for the editor's hand-written notes: `notes/*.md` (front matter `title`/`date`/`until`, all required) compiled by `scripts/notes.mjs` into the gitignored `public/data/notes.json` at dev/build time; the row shows only while a note is active, and only the newest active one (`currentNote()`, same rule in `src/lib/notes.ts` and `scripts/notes-lib.mjs`). `scripts/commentary.mjs` feeds that same note to the model after the stats pack (SPEC §3.9) — the one allowed source of outside events.
 
 **Data flow** (`src/lib/fetchers.ts` → `App.tsx` → `components/Tile.tsx`):
 

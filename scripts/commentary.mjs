@@ -22,6 +22,10 @@
 // stop_reason "refusal") is re-run on Anthropic's recommended fallback
 // inside the same call; whichever model actually answered is recorded in
 // the output as `model`.
+//
+// The editor's note (notes/*.md, SPEC §3.9) current on the session date
+// is appended to the user turn; the model may cite the event they describe,
+// attributed, and nothing else from outside the stats pack.
 
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { dirname } from "node:path";
@@ -41,13 +45,15 @@ import {
   userMessage,
   validateOutput,
 } from "./commentary-lib.mjs";
+import { currentNote } from "./notes-lib.mjs";
+import { readNotes } from "./notes.mjs";
 
 function arg(name) {
   const i = process.argv.indexOf(name);
   return i >= 0 ? process.argv[i + 1] : null;
 }
 
-function requestParams(pack) {
+function requestParams(pack, note) {
   return {
     model: MODEL,
     max_tokens: MAX_TOKENS,
@@ -61,13 +67,13 @@ function requestParams(pack) {
     // the prompt cache lives minutes, so no cache_control: a write would
     // cost the 25% premium for a read that never comes.
     system: SYSTEM_PROMPT,
-    messages: [{ role: "user", content: userMessage(pack) }],
+    messages: [{ role: "user", content: userMessage(pack, note) }],
   };
 }
 
-async function generate(pack) {
+async function generate(pack, note) {
   const client = new Anthropic();
-  const response = await client.beta.messages.create(requestParams(pack));
+  const response = await client.beta.messages.create(requestParams(pack, note));
 
   if (response.stop_reason === "refusal") {
     const d = response.stop_details;
@@ -103,9 +109,12 @@ async function main() {
   }
   const dryRun = process.argv.includes("--dry-run");
   const pack = JSON.parse(await readFile(statsPath, "utf8"));
+  // The editor's note current on the session date (SPEC §3.9). A
+  // malformed note throws here, like it fails the build.
+  const note = currentNote(await readNotes(), pack.date);
 
   if (dryRun) {
-    const p = requestParams(pack);
+    const p = requestParams(pack, note);
     console.log(`model ${p.model} · effort ${p.output_config.effort} · max_tokens ${p.max_tokens}`);
     console.log("\n--- system ---\n" + SYSTEM_PROMPT);
     console.log("\n--- user ---\n" + p.messages[0].content);
@@ -129,13 +138,14 @@ async function main() {
   }
 
   const generatedAt = Date.now();
-  const { output, model, usage } = await generate(pack);
-  const doc = buildDocument({ pack, output, model, usage, generatedAt });
+  const { output, model, usage } = await generate(pack, note);
+  const doc = buildDocument({ pack, output, model, usage, generatedAt, note });
 
   await mkdir(dirname(COMMENTARY_PATH), { recursive: true });
   await writeFile(COMMENTARY_PATH, JSON.stringify(doc, null, 2) + "\n");
   await writeFile(ARCHIVE_PATH, upsertArchive(archive, doc));
 
+  if (note) console.log(`editor's note given: ${note.file}`);
   const u = doc.usage ?? {};
   console.log(
     `wrote ${doc.date} commentary (${model}; in ${u.inputTokens} / cached ${u.cacheReadTokens} / out ${u.outputTokens} tokens)`,

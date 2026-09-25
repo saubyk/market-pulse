@@ -11,6 +11,9 @@ export type Commentary = {
   headline: string;
   body: string[];
   stats?: CommentaryStats;
+  // The editor's note the model was given (SPEC §3.9), or null; absent
+  // on notes written before the field existed.
+  editorNote?: { date: string; title: string } | null;
 };
 
 // The promptFacts() rendering (scripts/commentary-lib.mjs). Only the

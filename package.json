@@ -5,9 +5,9 @@
   "type": "module",
   "license": "MIT",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
-    "build:satusd": "tsc -b && vite build --base=/market-pulse/",
+    "dev": "node scripts/notes.mjs && vite",
+    "build": "node scripts/notes.mjs && tsc -b && vite build",
+    "build:satusd": "node scripts/notes.mjs && tsc -b && vite build --base=/market-pulse/",
     "preview": "vite preview",
     "test": "node --experimental-strip-types --test scripts/*.test.mjs src/lib/*.test.ts"
   },

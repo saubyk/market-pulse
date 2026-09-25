@@ -155,7 +155,8 @@ export function Commentary({ now }: { now: Date }) {
               textTransform: "uppercase",
             }}
           >
-            AI-generated from the day&rsquo;s numbers · {noteDate}
+            AI-generated from the day&rsquo;s numbers
+            {note.editorNote ? <> and the editor&rsquo;s note</> : null} · {noteDate}
             {note.tradingDay ? "" : " · markets closed"} · not investment
             advice
           </div>

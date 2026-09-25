@@ -5,6 +5,7 @@ import { Tile, type TileState } from "./components/Tile";
 import { ThemeToggle } from "./components/ThemeToggle";
 import { CurrencyPicker } from "./components/CurrencyPicker";
 import { Commentary } from "./components/Commentary";
+import { EditorNote } from "./components/EditorNote";
 import {
   CURRENCIES,
   loadCurrency,
@@ -394,6 +395,9 @@ export default function App() {
             margin: "0 0 12px",
           }}
         />
+
+        {/* Editor's note — renders nothing unless a note is active */}
+        <EditorNote now={now} />
 
         {/* Today's read — renders nothing when there is no note */}
         <Commentary now={now} />

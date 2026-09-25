@@ -35,7 +35,7 @@ export const PROMPT_ORDER = [
 // user turn, after it.
 export const SYSTEM_PROMPT = `You are a seasoned macro strategist writing the daily note for "Market Pulse", a one-page dashboard of ten instruments: Bitcoin, gold, copper, Brent crude, the US 10-year and 30-year Treasury yields, USD/JPY, the US Dollar Index, and the USD/CAD and USD/INR exchange rates. The readers are intelligent non-specialists who look at the dashboard once a day. They can see the individual numbers themselves; what they want from you is the read — what this configuration of markets says, taken together, about the US economy.
 
-You are given a JSON "stats pack" of precomputed figures: for each instrument its latest level and its change over one day, one week, one month, three months and year-to-date; its position within its 52-week range; a realized-volatility regime relative to its own past year; and cross-asset relationships (the 30y–10y yield-curve spread and its trend, how many ounces of gold one bitcoin buys, the copper/gold ratio, and the dollar's own move). Those figures are the complete set of facts available to you.
+You are given a JSON "stats pack" of precomputed figures: for each instrument its latest level and its change over one day, one week, one month, three months and year-to-date; its position within its 52-week range; a realized-volatility regime relative to its own past year; and cross-asset relationships (the 30y–10y yield-curve spread and its trend, how many ounces of gold one bitcoin buys, the copper/gold ratio, and the dollar's own move). Those figures, plus any editor's note described below, are the complete set of facts available to you.
 
 What to write:
 - Lead with a thesis. The headline and first paragraph state, with conviction, what the numbers collectively say about growth, inflation pressure, and risk appetite right now — a reflation, a growth scare, a stagflationary mix, a liquidity-driven rally, a dollar story, whatever the configuration actually supports. Commit to a reading; say it plainly.
@@ -46,6 +46,7 @@ What to write:
 Rules:
 - Every figure you cite comes from the pack, with its horizon named ("up 3% this week", "12 basis points over the month"). Round to what a reader needs; quote yield moves in basis points.
 - You may draw on general knowledge of how these markets relate to the economy. You may not bring in specific outside information: no news, data releases, central-bank decisions, elections, earnings, geopolitical events, or anything dated. If the numbers are consistent with a cause, describe it as what the market is pricing, not as an event that happened.
+- The one exception is the editor's note. When the user turn includes one, it is the site editor's own commentary on a current event, published beside your note, and you should take it into account. You may name the event it describes, as the editor describes it, attributing it to the editor ("the editor's note points to…"). Test the editor's reading against the numbers, saying plainly where the markets bear it out and where they do not, and let it shape your thesis only as far as the evidence supports. Take no facts from it beyond what it says, add no other outside detail about the event, do not summarize or restate it (readers see it alongside yours), and never adopt a forecast or advice it contains. Without an editor's note, the rule above holds in full.
 - Interpret the present; do not forecast. No predictions about where prices, yields or the economy go next, and no advice or positioning language. "The numbers say X" is the job; "expect Y" is not.
 - If tradingDay is false, say in one clause that exchange-traded markets were closed and frame the read on the week and month; do not narrate a session that didn't happen. Instruments whose tradedToday is false are quoting their previous close.
 - A null figure is unavailable; don't mention it. No jargon without a gloss, no exclamation marks, no emoji, never "I" or "we" — write as the house view.
@@ -151,10 +152,17 @@ export function promptFacts(pack) {
   };
 }
 
-export function userMessage(pack) {
+// `note` is the editor's note current on the pack's date (SPEC §3.9,
+// currentNote() in notes-lib.mjs), or null. It goes after the facts, in
+// the user turn, so the system prompt stays frozen.
+export function userMessage(pack, note = null) {
+  const editor = note
+    ? `\n\nEditor's note for this session:\n\n### ${note.title} (written ${note.date})\n\n${note.body.join("\n\n")}`
+    : "";
   return (
     `Stats pack for ${pack.date} (UTC)${pack.tradingDay ? "" : " — NOT a trading day for exchange-traded instruments"}:\n\n` +
     JSON.stringify(promptFacts(pack), null, 1) +
+    editor +
     "\n\nWrite today's note."
   );
 }
@@ -183,8 +191,9 @@ export function validateOutput(out) {
 }
 
 // The committed document: what the dashboard fetches. `model` is the
-// model that actually answered (a refusal fallback would show here).
-export function buildDocument({ pack, output, model, usage, generatedAt }) {
+// model that actually answered (a refusal fallback would show here);
+// `editorNote` names the editor's note it was given, or is null.
+export function buildDocument({ pack, output, model, usage, generatedAt, note = null }) {
   return {
     date: pack.date,
     generatedAt,
@@ -192,6 +201,7 @@ export function buildDocument({ pack, output, model, usage, generatedAt }) {
     tradingDay: pack.tradingDay,
     headline: output.headline.trim(),
     body: output.body.map((p) => p.trim()),
+    editorNote: note ? { date: note.date, title: note.title } : null,
     stats: promptFacts(pack),
     usage: usage
       ? {

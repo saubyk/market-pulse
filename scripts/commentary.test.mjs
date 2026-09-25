@@ -175,3 +175,38 @@ test("responseText returns the first text block or null", () => {
   assert.equal(responseText({ content: [] }), null);
   assert.equal(responseText({}), null);
 });
+
+const EDITOR_NOTE = {
+  file: "2026-08-20-fed.md",
+  title: "Fed cuts 50bp in a surprise move",
+  date: "2026-08-20",
+  until: "2026-09-03",
+  body: ["The Fed cut by 50bp, twice what was priced.", "Watch whether long yields follow."],
+};
+
+test("userMessage appends the editor's note after the facts, and nothing without one", () => {
+  const m = userMessage(pack(), EDITOR_NOTE);
+  assert.match(m, /Editor's note/);
+  assert.match(m, /Fed cuts 50bp in a surprise move/);
+  assert.match(m, /written 2026-08-20/);
+  assert.match(m, /twice what was priced\.\n\nWatch whether/);
+  assert.ok(m.indexOf('"Gold"') < m.indexOf("Fed cuts"), "note comes after the stats pack");
+  assert.ok(m.trimEnd().endsWith("Write today's note."));
+  assert.equal(userMessage(pack(), null), userMessage(pack()));
+  assert.doesNotMatch(userMessage(pack()), /Editor's note/);
+});
+
+test("the system prompt allows the editor's note as the one outside source", () => {
+  assert.match(SYSTEM_PROMPT, /editor's note/);
+  assert.match(SYSTEM_PROMPT, /attribut/);
+  assert.match(SYSTEM_PROMPT, /where the markets bear it out and where they do not/);
+});
+
+test("buildDocument records which editor's note the model was given", () => {
+  const base = { pack: pack(), output: { headline: "h", body: ["b"] }, model: "m", generatedAt: 0 };
+  assert.deepEqual(buildDocument({ ...base, note: EDITOR_NOTE }).editorNote, {
+    date: "2026-08-20",
+    title: "Fed cuts 50bp in a surprise move",
+  });
+  assert.equal(buildDocument(base).editorNote, null);
+});

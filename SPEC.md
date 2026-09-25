@@ -211,11 +211,11 @@ Record shape (`null` for any source that failed that day; failed keys are listed
 
 **Model and request.** `claude-fable-5-1` (Claude Fable 5.1; `claude-fable-5` until 2026-09-06 — same API surface and per-token price) through `@anthropic-ai/sdk` (a devDependency; CI-only, never in the Vite bundle). Fable 5.1's thinking is always on, so no `thinking` parameter is sent; depth is `output_config.effort: "high"`, `max_tokens` 4000. The answer is constrained by `output_config.format` to a JSON schema `{headline, body: string[2..4]}`, so there is no prose parsing and no `tool_choice` — Fable 5.1 rejects forced tool use. Server-side refusal fallbacks are enabled (`fallbacks: "default"` under the `server-side-fallback-2026-07-01` beta): a classifier decline is re-run on Anthropic's recommended fallback within the same call, and **whichever model actually answered is recorded** in the output's `model` field. The system prompt is frozen text containing nothing date-dependent, so it would prompt-cache if the job ran more than once a day; it doesn't (a cache write costs more than the read that never comes), so no `cache_control` is set. Everything that changes daily is in the user turn.
 
-**What the model is given** — only the stats pack (§3.7), rounded to reader precision and renamed to display names (`promptFacts()`).
+**What the model is given** — the stats pack (§3.7), rounded to reader precision and renamed to display names (`promptFacts()`), plus the editor's note current on the session date, if any (§3.9), appended after it in the user turn.
 
 **The brief.** The note is a macro strategist's house view, not a recap: it leads with a thesis — what the configuration of yields, curve, dollar, commodities and gold/BTC says, taken together, about growth, inflation pressure and risk appetite — then argues it from the interplay between the instruments (steepening curve + rising copper/gold + softer dollar vs. gold rising alongside yields, bitcoin outrunning gold, the dollar's share of any dollar-priced move), naming the tensions and which signal it weights. Individual instruments appear only as evidence or outliers. Two or three paragraphs, ~120–180 words, concise and committed.
 
-**Guardrails.** Every figure cited comes from the pack with its horizon named; general knowledge of how these markets relate to the economy is allowed, but no specific outside information (news, data releases, central-bank decisions, events — "what the market is pricing", never "what happened"); interpret the present, never forecast; no advice; when `tradingDay` is false, say so and frame the read on the week and month. `output_config.effort` is `high` — the synthesis is the point.
+**Guardrails.** Every figure cited comes from the pack with its horizon named; general knowledge of how these markets relate to the economy is allowed, but no specific outside information (news, data releases, central-bank decisions, events — "what the market is pricing", never "what happened") except the event an editor's note describes, which the model may name as the editor describes it, attributed, testing the editor's reading against the numbers rather than repeating it, adding nothing about the event beyond the note, and adopting none of its forecasts or advice; interpret the present, never forecast; no advice; when `tradingDay` is false, say so and frame the read on the week and month. `output_config.effort` is `high` — the synthesis is the point.
 
 **Outputs** (both in `public/`, committed daily):
 - `public/data/commentary.json` — the latest note, what the dashboard fetches (§5.7, milestone 4):
@@ -228,6 +228,7 @@ Record shape (`null` for any source that failed that day; failed keys are listed
   "tradingDay": true,
   "headline": "Yields edge lower as gold pushes toward its yearly high",
   "body": ["…", "…"],
+  "editorNote": { "date": "2026-08-20", "title": "…" },
   "stats": { "…the promptFacts rendering of the pack…" },
   "usage": { "inputTokens": 3100, "outputTokens": 420, "cacheReadTokens": 2600, "cacheWriteTokens": null }
 }
@@ -242,6 +243,20 @@ Record shape (`null` for any source that failed that day; failed keys are listed
 **Cost.** ~5K input tokens and ~1K output per note (measured over the first two weeks at `effort: high`) at $10 / $50 per million — a little over $0.10 a note, ≈ $2–3/month on weekdays only. Fable 5.1 is priced the same per token as Fable 5. Per-run token usage is logged and stored in the document.
 
 **Org requirement.** Fable 5.1, like Fable 5, requires 30-day data retention; an organization configured for zero data retention gets `400 invalid_request_error` on every request.
+
+---
+
+### 3.9 Editor's notes (hand-written, occasional)
+
+The site's editor can publish their own commentary on a current event that is moving, or may move, the markets. It is not daily: a note exists only when there is something to say.
+
+**Authoring.** One Markdown file per note in `notes/` (any `*.md` but a README; name them `YYYY-MM-DD-slug.md`), with a front-matter header of exactly three required keys: `title` (≤ 120 characters), `date` (the day it was written and first shown) and `until` (the last day it is active, inclusive) — both `YYYY-MM-DD`, UTC. There is no default lifespan: every note states its own end, so an event never keeps colouring the read after it has passed. The body is plain paragraphs separated by blank lines; Markdown syntax is not rendered. `notes/README.md` is the authoring guide. Publishing is a push to `main`.
+
+**Compilation.** `scripts/notes.mjs` parses and validates every note (pure logic in `scripts/notes-lib.mjs`, covered by `npm test`) and writes them, newest first, to `public/data/notes.json` — a gitignored build artifact. It runs at the start of `npm run dev`, `npm run build` and `npm run build:satusd`, so the push that adds a note deploys it; a malformed note (missing key, bad or impossible date, `until` before `date`, empty body, unknown key) exits 1 naming the file, which fails the build rather than shipping. All notes are emitted; which are active is decided at read time, so the build doesn't depend on the clock. No notes, or no `notes/` directory, is an empty list.
+
+**Current.** A note is active on day D when `date ≤ D ≤ until`, and only one note is ever current: the newest active one (by `date`, then file name). An older note still inside its window is superseded — not shown and not given to the model — and comes back if the newer one expires first. The dashboard evaluates this against today's UTC date (§5.8, `currentNote()` in `lib/notes.ts`); the commentary job against the stats pack's session date (§3.8, `currentNote()` in `notes-lib.mjs`). The two sides use the same rule so the daily note never cites an editor's note the page isn't showing.
+
+**Into the daily note.** `scripts/commentary.mjs` hands the current note to the model after the stats pack, as its title, written date and body. The frozen system prompt carries the rule for them (§3.8, guardrails): the editor's note is the one permitted source of outside context. The document records which note the model was given (`editorNote: {date, title}`, `null` when none), and the panel's footer says so (§5.7). A note published after its session's note was written reaches the model at the next session's run; the `regenerate` dispatch input rewrites the current one if it shouldn't wait.
 
 ---
 
@@ -377,13 +392,23 @@ A segmented `USD · CAD · INR` control in the header eyebrow, left of the theme
 
 **Collapsed (default):** one row — `TODAY'S READ — <headline> ▾` — eyebrow micro-type for the label, the headline in body text with an ellipsis if it overflows (wrapping at ≤640px). This is the only vertical cost in the default state, keeping the one-viewport layout of §5.1. Notes describe an exchange session (§3.8), so when the note is not dated today (UTC) — a weekend, a holiday, or a weekday before that session's note has landed — the label reads `LAST READ · SEP 4` instead, and Friday's read is never called today's.
 
-**Expanded (click):** the note's paragraphs in the display serif at 18px / 1.5 line-height (1.55 at ≤640px; Instrument Serif has a small x-height, so it must run larger than the mono body sizes to be comfortable), line length capped at 64ch; a compact stats strip (11px) — the eight tiles in dashboard order with their week / month / YTD moves (basis points for the two yields, percent for the rest), four per row, two at ≤640px — and a footer line `AI-GENERATED FROM THE DAY'S NUMBERS · AUG 23 · NOT INVESTMENT ADVICE`, with `· MARKETS CLOSED` appended when the note's `tradingDay` is false. The open/closed state persists to `localStorage("mp-commentary-open")` (its own key, not shared with satusd.com).
+**Expanded (click):** the note's paragraphs in the display serif at 18px / 1.5 line-height (1.55 at ≤640px; Instrument Serif has a small x-height, so it must run larger than the mono body sizes to be comfortable), line length capped at 64ch; a compact stats strip (11px) — the eight tiles in dashboard order with their week / month / YTD moves (basis points for the two yields, percent for the rest), four per row, two at ≤640px — and a footer line `AI-GENERATED FROM THE DAY'S NUMBERS · AUG 23 · NOT INVESTMENT ADVICE`, with `· MARKETS CLOSED` appended when the note's `tradingDay` is false; when the note was written with an editor's note (`editorNote` set) the footer reads `AI-GENERATED FROM THE DAY'S NUMBERS AND THE EDITOR'S NOTE · …`. The open/closed state persists to `localStorage("mp-commentary-open")` (its own key, not shared with satusd.com).
 
 **Absent note:** if the file 404s or fails to parse (a fresh clone, a fork that has never run the job, a network error), the component renders nothing at all — no placeholder, no reserved space. It also renders nothing until the fetch resolves, so the dashboard never shifts layout for a note that turns out not to exist.
 
 **Stale note:** Friday's note is the current one all weekend and through a Monday holiday, so a note older than `STALE_AFTER_DAYS` (4) whole UTC days — Friday to Tuesday is 4 — means the pipeline is broken. The row then reads `LAST READ · AUG 20 — no commentary since AUG 20` in muted text instead of presenting the old headline as current; expanding still shows the old note, headed by a red `LAST NOTE IS FROM AUG 20 — NO SESSION SINCE HAS BEEN WRITTEN UP` line. Staleness is computed against the dashboard's 1-second clock, so a tab left open rolls over correctly.
 
 Styling follows the rest of the app: colours via `theme.ts` tokens inline; the `:hover`, the ellipsis and the strip's breakpoint in `styles.css` (`.read-*`).
+
+---
+
+### 5.8 Editor's note row
+
+`components/EditorNote.tsx`, rendered between the header divider and "Today's read" (§5.7). It fetches `${import.meta.env.BASE_URL}data/notes.json` (§3.9) on mount and hourly, and shows the one note current on today's UTC date (§3.9 — the newest active note; `currentNote()` in `lib/notes.ts`, evaluated against the 1-second clock, so a note appears and expires without a reload). No active note — or no file, or a failed fetch — renders nothing at all: no row, no placeholder, no reserved space.
+
+**Collapsed (default):** one row, `EDITOR'S NOTE · SEP 24 — <title> ▾`, the current note's date and title. It uses the same `.read-*` classes as §5.7. While a note is active this is a second row under the header and costs ~30px, so on a viewport near the ~755px budget of §5.1 the last tile row scrolls slightly; with no active note the layout is unchanged.
+
+**Expanded (click):** the note's paragraphs in the same serif as §5.7 and a footer `EDITOR'S NOTE · WRITTEN SEP 24 · NOT INVESTMENT ADVICE`. Open/closed persists to `localStorage("mp-editor-note-open")`, separately from the daily note.
 
 ---
 
@@ -454,7 +479,9 @@ market-pulse/
 │   └── data/
 │       ├── snapshots.jsonl  // one line per day, appended by CI (§3.6)
 │       ├── commentary.json  // latest LLM-written note (§3.8)
-│       └── commentary.jsonl // every note, one per line
+│       ├── commentary.jsonl // every note, one per line
+│       └── notes.json       // compiled editor's notes (build artifact, gitignored; §3.9)
+├── notes/                 // hand-written editor's notes, one .md each (§3.9)
 ├── worker/
 │   ├── index.js           // Cloudflare Worker: pinned Yahoo CORS proxy (primary)
 │   └── wrangler.toml
@@ -467,7 +494,10 @@ market-pulse/
 │   ├── stats.mjs          // CLI: history dump + snapshot log → stats pack
 │   ├── commentary.mjs     // CLI: stats pack → Claude → commentary.json; see §3.8
 │   ├── commentary-lib.mjs // prompt, schema, validation, document shape
-│   └── commentary.test.mjs
+│   ├── commentary.test.mjs
+│   ├── notes.mjs          // CLI: notes/*.md → public/data/notes.json (dev/build); see §3.9
+│   ├── notes-lib.mjs      // note parsing, validation, active selection
+│   └── notes.test.mjs
 ├── .github/workflows/
 │   ├── deploy-satusd.yml  // build + push dist/ into saubyk/satusd.com
 │   └── daily-commentary.yml // cron: snapshot → stats → commentary → commit → dispatch deploy
@@ -551,7 +581,7 @@ The implementation is done when:
 - OS-preference auto-theming (`prefers-color-scheme`) — the theme is explicit: light default plus a manual toggle, matching satusd.com (see §5.3).
 - I18N / locale-aware number formatting (grouping and separators are always en-US).
 - Display currencies beyond the USD/CAD/INR of §5.6 — no arbitrary currency list, no currency conversion of the yield, index or FX tiles.
-- Commentary features beyond §5.7: no per-tile notes, no history browser for past notes in the UI (the archive is `commentary.jsonl`), no "regenerate" button, no browser-side LLM calls.
+- Commentary features beyond §5.7 and §5.8: no per-tile notes, no history browser for past notes in the UI (the archive is `commentary.jsonl`), no "regenerate" button, no browser-side LLM calls, no in-browser note editor (editor's notes are files in `notes/`, §3.9).
 
 ---
 
