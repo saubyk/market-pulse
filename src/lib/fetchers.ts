@@ -70,7 +70,20 @@ export type YahooQuote = {
   previousClose: number;
   history: number[];
   lastUpdate: number;
+  // The exchange's regular session (unix ms) as Yahoo reports it in
+  // meta.currentTradingPeriod.regular — the current or next session.
+  // Absent when the payload doesn't carry it.
+  session?: TradingSession;
 };
+
+export type TradingSession = { start: number; end: number };
+
+function regularSession(meta: any): TradingSession | undefined {
+  const r = meta.currentTradingPeriod?.regular;
+  if (typeof r?.start !== "number" || typeof r?.end !== "number") return undefined;
+  if (r.end <= r.start) return undefined;
+  return { start: r.start * 1000, end: r.end * 1000 };
+}
 
 // Change reference: the previous *trading day's* close, taken from the
 // bars themselves — the last close dated on an earlier UTC day than the
@@ -128,6 +141,7 @@ export function parseYahoo(key: YahooKey, result: any): YahooQuote {
     history: history.map((v) => v / divisor),
     lastUpdate:
       (meta.regularMarketTime ?? Math.floor(Date.now() / 1000)) * 1000,
+    session: regularSession(meta),
   };
 }
 

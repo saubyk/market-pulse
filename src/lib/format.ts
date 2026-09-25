@@ -44,3 +44,25 @@ export function fmtDate(d: Date): string {
 export function fmtTime(ts: number): string {
   return fmtClock(new Date(ts));
 }
+
+// Freshness tag for a quote whose market has stopped trading: "CLOSE 3PM
+// ET" — the session end in New York time — whenever `now` falls outside
+// the regular session, else null. Yahoo's ^TNX/^TYX are Cboe indices that
+// stop at 3pm ET while cash Treasuries keep trading, so after the close the
+// tile's yield can sit several bp from a live quote; the tag says why.
+export function fmtCloseTag(
+  session: { start: number; end: number } | undefined,
+  now: number,
+): string | null {
+  if (!session || (now >= session.start && now < session.end)) return null;
+  const t = new Date(session.end)
+    .toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+      timeZone: "America/New_York",
+    })
+    .replace(":00", "")
+    .replace(/\s/g, "");
+  return `CLOSE ${t} ET`;
+}

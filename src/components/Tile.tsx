@@ -2,6 +2,7 @@ import { COLORS, FONTS } from "../lib/theme";
 import { fmtNum, fmtChg, fmtPct, fmtTime } from "../lib/format";
 import { Sparkline } from "./Sparkline";
 import { LiveDot } from "./LiveDot";
+import type { TradingSession } from "../lib/fetchers";
 
 export type TileState = {
   loading: boolean;
@@ -10,6 +11,7 @@ export type TileState = {
   previousClose?: number;
   history?: number[];
   lastUpdate?: number;
+  session?: TradingSession;
 };
 
 type Props = {
@@ -20,6 +22,8 @@ type Props = {
   priceDecimals?: number;
   changeDecimals?: number;
   live?: boolean;
+  // Replaces the DLY 15m tag once the market has closed (fmtCloseTag).
+  closeTag?: string | null;
   state: TileState;
   index: number;
 };
@@ -32,6 +36,7 @@ export function Tile({
   priceDecimals = 2,
   changeDecimals = 2,
   live = false,
+  closeTag,
   state,
   index,
 }: Props) {
@@ -99,7 +104,7 @@ export function Tile({
               LIVE
             </>
           ) : (
-            "DLY 15m"
+            (closeTag ?? "DLY 15m")
           )}
           {lastUpdate ? (
             <span style={{ color: COLORS.muted }}>

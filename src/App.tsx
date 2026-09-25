@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { COLORS, FONTS } from "./lib/theme";
-import { fmtClock, fmtDate, fmtNum, fmtTime } from "./lib/format";
+import { fmtClock, fmtCloseTag, fmtDate, fmtNum, fmtTime } from "./lib/format";
 import { Tile, type TileState } from "./components/Tile";
 import { ThemeToggle } from "./components/ThemeToggle";
 import { CurrencyPicker } from "./components/CurrencyPicker";
@@ -51,6 +51,10 @@ function loadStoredQuote(key: YahooKey): TileState | null {
       previousClose: q.previousClose,
       history: Array.isArray(q.history) ? q.history : undefined,
       lastUpdate: typeof q.lastUpdate === "number" ? q.lastUpdate : undefined,
+      session:
+        typeof q.session?.start === "number" && typeof q.session?.end === "number"
+          ? { start: q.session.start, end: q.session.end }
+          : undefined,
     };
   } catch {
     return null;
@@ -66,6 +70,7 @@ function saveStoredQuote(key: YahooKey, state: TileState) {
         previousClose: state.previousClose,
         history: state.history,
         lastUpdate: state.lastUpdate,
+        session: state.session,
       }),
     );
   } catch {
@@ -115,6 +120,7 @@ function useYahooPoll(
           previousClose: q.previousClose,
           history: q.history,
           lastUpdate: q.lastUpdate,
+          session: q.session,
         };
         lastGood.current = next;
         saveStoredQuote(symbol, next);
@@ -443,6 +449,7 @@ export default function App() {
             sublabel="10-year Treasury yield, %"
             priceDecimals={3}
             changeDecimals={3}
+            closeTag={fmtCloseTag(tnx.session, now.getTime())}
             state={tnx}
           />
           <Tile
@@ -452,6 +459,7 @@ export default function App() {
             sublabel="30-year Treasury yield, %"
             priceDecimals={3}
             changeDecimals={3}
+            closeTag={fmtCloseTag(tyx.session, now.getTime())}
             state={tyx}
           />
         </Section>

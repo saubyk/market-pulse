@@ -35,6 +35,8 @@ Bitcoin is fetched directly from Coinbase's public spot endpoint (CORS-enabled) 
 
 Copper, Brent crude, Treasury yields (10Y/30Y), gold, USD/JPY, and the US Dollar Index come from Yahoo Finance's unofficial chart endpoint. Yahoo does not send `Access-Control-Allow-Origin`, so the request is proxied. The data is 15-minute delayed, so each symbol is polled every 5 minutes and the seven fetches are staggered ~400ms apart to stay under the free proxies' per-IP burst limits.
 
+The Treasury yields (`^TNX`, `^TYX`) are Cboe indices that stop updating at 3pm ET, while the cash Treasury market keeps trading into the evening. After the close the two yield tiles swap `DLY 15m` for `CLOSE 3PM ET`, so a gap against a live quote elsewhere reads as the index close, not a stale fetch.
+
 ## Currency
 
 The header carries a `USD · CAD · INR` picker. It converts exactly the four instruments that are dollar amounts — Bitcoin, gold, copper and Brent — including their absolute change and the unit in their sublabel (`$/oz` → `C$/oz`). The other four tiles never convert: the 10Y and 30Y yields are percentages, the Dollar Index is a unitless index, and USD/JPY is itself a USD pair. Percent changes are identical in every currency, by definition.
