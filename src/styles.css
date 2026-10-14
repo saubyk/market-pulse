@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@300;400;500&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@300;400;500&family=Source+Serif+4:opsz,wght@8..60,400&display=swap");
 
 /* ===== Theme tokens =====
    Shared with satusd.com: light is the default (what renders with no saved
@@ -240,15 +240,16 @@ body {
   margin-top: 12px;
 }
 
-/* The note's prose. Instrument Serif has a small x-height, so it needs
-   to run well above body-mono sizes to read comfortably; line length is
-   capped for the same reason. */
+/* The note's prose (daily read and editor's note). A text serif, not the
+   condensed Instrument Serif display face, which reads tall and cramped
+   over several paragraphs; generous leading, paragraph space and a
+   ~62ch measure keep figure-heavy sentences easy to follow. */
 .read-para {
-  font-family: "Instrument Serif", serif;
-  font-size: 18px;
-  line-height: 1.5;
-  margin: 0 0 12px;
-  max-width: 64ch;
+  font-family: "Source Serif 4", Georgia, serif;
+  font-size: 17px;
+  line-height: 1.65;
+  margin: 0 0 1.1em;
+  max-width: 62ch;
 }
 
 .read-old-headline {
@@ -302,7 +303,8 @@ body {
     white-space: normal;
   }
   .read-para {
-    line-height: 1.55;
+    font-size: 16.5px;
+    line-height: 1.6;
   }
   /* One stat per row: two columns of "+21.7% wk +17.9% mo -13.2% ytd"
      overflow a 390px viewport. */

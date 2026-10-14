@@ -117,9 +117,8 @@ export function Commentary({ now }: { now: Date }) {
               {note.headline}
             </div>
           ) : null}
-          {/* Sizes live in styles.css (.read-para): the display serif has a
-              small x-height, so it runs larger than body text, and the
-              mobile size differs — inline styles can't do breakpoints. */}
+          {/* Type lives in styles.css (.read-para): a text serif, with a
+              different mobile size — inline styles can't do breakpoints. */}
           {note.body.map((p, i) => (
             <p key={i} className="read-para" style={{ color: COLORS.text }}>
               {p}

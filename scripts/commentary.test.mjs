@@ -105,6 +105,9 @@ test("the system prompt is frozen text with the load-bearing rules", () => {
   assert.match(SYSTEM_PROMPT, /directional calls tied to a named development and its channel, nothing else/);
   assert.match(SYSTEM_PROMPT, /no price targets, probabilities, timelines, trade recommendations or positioning advice/);
   assert.match(SYSTEM_PROMPT, /Lead with a thesis/);
+  // Readability: short paragraphs, few figures per sentence.
+  assert.match(SYSTEM_PROMPT, /two or three sentences each, one idea per paragraph/);
+  assert.match(SYSTEM_PROMPT, /no more than two figures in any sentence/);
   assert.match(SYSTEM_PROMPT, /tradingDay is false/);
   // Nothing date- or run-dependent may be interpolated, or caching breaks.
   assert.doesNotMatch(SYSTEM_PROMPT, /\d{4}-\d{2}-\d{2}/);
