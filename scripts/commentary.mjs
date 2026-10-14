@@ -25,11 +25,11 @@
 // the output as `model`.
 //
 // The editor's note (notes/*.md, SPEC §3.9) current on the session date
-// is appended to the user turn; the model may cite the event they describe,
-// attributed, and nothing else from outside the stats pack in the main
-// note. The news headlines (--news, SPEC §3.10) follow it and feed only
-// the separate geopolitics field. --news is optional; a path that doesn't
-// exist (the news step failed) is logged and treated as no headlines.
+// is appended to the user turn, then the numbered news headlines (--news,
+// SPEC §3.10). The model weaves both into one note, attributed, and may
+// bring in no other outside events; the headlines it cites are recorded
+// under `sources`. --news is optional; a path that doesn't exist (the
+// news step failed) is logged and treated as no headlines.
 
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { dirname } from "node:path";
@@ -151,7 +151,7 @@ async function main() {
   await writeFile(ARCHIVE_PATH, upsertArchive(archive, doc));
 
   if (note) console.log(`editor's note given: ${note.file}`);
-  console.log(`news headlines given: ${news.length}; geopolitics ${doc.geopolitics ? `written, citing ${doc.geopolitics.sources.length}` : "empty"}`);
+  console.log(`news headlines given: ${news.length}; cited: ${doc.sources.length}`);
   const u = doc.usage ?? {};
   console.log(
     `wrote ${doc.date} commentary (${model}; in ${u.inputTokens} / cached ${u.cacheReadTokens} / out ${u.outputTokens} tokens)`,
@@ -160,12 +160,11 @@ async function main() {
     console.log(`note: answered by fallback model ${model}`);
   }
   console.log(`\n${doc.headline}\n\n${doc.body.join("\n\n")}`);
-  if (doc.geopolitics) console.log(`\nGeopolitics:\n\n${doc.geopolitics.body.join("\n\n")}`);
 }
 
 // The headlines written by scripts/news.mjs, or [] without --news. A
-// missing file means the news step failed; the note goes ahead without
-// a geopolitics section rather than failing too.
+// missing file means the news step failed; the note goes ahead on the
+// numbers alone rather than failing too.
 async function readNews(path) {
   if (!path) return [];
   try {

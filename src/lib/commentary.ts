@@ -14,15 +14,12 @@ export type Commentary = {
   // The editor's note the model was given (SPEC §3.9), or null; absent
   // on notes written before the field existed.
   editorNote?: { date: string; title: string } | null;
-  // The forward look at the news headlines (SPEC §3.10), or null when the
-  // model wrote none; absent on notes written before the field existed.
-  geopolitics?: CommentaryGeopolitics | null;
+  // The news headlines the note cites (SPEC §3.10), in headline order;
+  // empty or absent when it cites none or predates the field.
+  sources?: CommentarySource[];
 };
 
-export type CommentaryGeopolitics = {
-  body: string[];
-  sources: { source: string; title: string; link: string | null }[];
-};
+export type CommentarySource = { source: string; title: string; link: string | null };
 
 // The promptFacts() rendering (scripts/commentary-lib.mjs). Only the
 // parts the strip displays are typed; the rest is carried through.
@@ -121,10 +118,10 @@ export function safeHref(link: unknown): string | null {
 }
 
 // What the footer says the note was written from.
-export function footerSources(c: Pick<Commentary, "editorNote" | "geopolitics">): string {
+export function footerSources(c: Pick<Commentary, "editorNote" | "sources">): string {
   const parts = ["the day’s numbers"];
   if (c.editorNote) parts.push("the editor’s note");
-  if (c.geopolitics?.body.length) parts.push("selected news headlines");
+  if (c.sources?.length) parts.push("selected news headlines");
   return parts.length === 1 ? parts[0] : `${parts.slice(0, -1).join(", ")} and ${parts[parts.length - 1]}`;
 }
 

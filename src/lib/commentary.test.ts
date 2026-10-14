@@ -77,14 +77,14 @@ test("safeHref passes only plain http(s) links", () => {
 });
 
 test("footerSources names what the note was written from", () => {
-  const geo = { body: ["p"], sources: [] };
+  const cited = [{ source: "Outlet A", title: "t", link: null }];
   const ed = { date: "2026-10-08", title: "t" };
   assert.equal(footerSources({}), "the day’s numbers");
   assert.equal(footerSources({ editorNote: ed }), "the day’s numbers and the editor’s note");
-  assert.equal(footerSources({ geopolitics: geo }), "the day’s numbers and selected news headlines");
+  assert.equal(footerSources({ sources: cited }), "the day’s numbers and selected news headlines");
   assert.equal(
-    footerSources({ editorNote: ed, geopolitics: geo }),
+    footerSources({ editorNote: ed, sources: cited }),
     "the day’s numbers, the editor’s note and selected news headlines",
   );
-  assert.equal(footerSources({ geopolitics: { body: [], sources: [] } }), "the day’s numbers");
+  assert.equal(footerSources({ sources: [] }), "the day’s numbers");
 });

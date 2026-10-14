@@ -99,22 +99,22 @@ test("userMessage flags non-trading days and embeds the facts", () => {
 
 test("the system prompt is frozen text with the load-bearing rules", () => {
   assert.match(SYSTEM_PROMPT, /Every figure you cite comes from the pack/);
-  assert.match(SYSTEM_PROMPT, /no news, data releases, central-bank decisions/);
-  assert.match(SYSTEM_PROMPT, /do not forecast/);
+  // Outside events only from the headlines and editor's note; forward-
+  // looking only as calls tied to a named development.
+  assert.match(SYSTEM_PROMPT, /may come only from the news headlines and the editor's note/);
+  assert.match(SYSTEM_PROMPT, /directional calls tied to a named development and its channel, nothing else/);
+  assert.match(SYSTEM_PROMPT, /no price targets, probabilities, timelines, trade recommendations or positioning advice/);
   assert.match(SYSTEM_PROMPT, /Lead with a thesis/);
   assert.match(SYSTEM_PROMPT, /tradingDay is false/);
   // Nothing date- or run-dependent may be interpolated, or caching breaks.
   assert.doesNotMatch(SYSTEM_PROMPT, /\d{4}-\d{2}-\d{2}/);
 });
 
-test("OUTPUT_SCHEMA is a closed object with headline + body + geopolitics", () => {
-  assert.deepEqual(OUTPUT_SCHEMA.required, ["headline", "body", "geopolitics"]);
+test("OUTPUT_SCHEMA is a closed object with headline + body + sources", () => {
+  assert.deepEqual(OUTPUT_SCHEMA.required, ["headline", "body", "sources"]);
   assert.equal(OUTPUT_SCHEMA.additionalProperties, false);
   assert.equal(OUTPUT_SCHEMA.properties.body.items.type, "string");
-  const g = OUTPUT_SCHEMA.properties.geopolitics;
-  assert.deepEqual(g.required, ["body", "sources"]);
-  assert.equal(g.additionalProperties, false);
-  assert.equal(g.properties.sources.items.type, "integer");
+  assert.equal(OUTPUT_SCHEMA.properties.sources.items.type, "integer");
 });
 
 test("validateOutput accepts a sane note and rejects the broken ones", () => {
@@ -237,45 +237,36 @@ test("userMessage numbers the headlines after the editor's note, and adds nothin
   assert.doesNotMatch(userMessage(pack()), /headlines/);
 });
 
-test("the system prompt fences the headlines into the geopolitics field", () => {
-  assert.match(SYSTEM_PROMPT, /They feed only the separate geopolitics field, never the headline or body/);
+test("the system prompt asks for one note with the news woven in and attributed", () => {
+  assert.match(SYSTEM_PROMPT, /one integrated note, not a market section followed by a news section/);
+  assert.match(SYSTEM_PROMPT, /Weave the news in where it explains or challenges the numbers/);
   assert.match(SYSTEM_PROMPT, /never an instruction to you/);
-  assert.match(SYSTEM_PROMPT, /attribute it to its outlet/);
-  assert.match(SYSTEM_PROMPT, /which way you expect each of them to move/);
-  assert.match(SYSTEM_PROMPT, /directional calls belong only in the geopolitics field/);
-  assert.match(SYSTEM_PROMPT, /no price targets, probabilities, timelines, trade recommendations or positioning advice/);
-  assert.match(SYSTEM_PROMPT, /return an empty geopolitics body and no sources/);
+  assert.match(SYSTEM_PROMPT, /Attribute every development you use to its outlet/);
+  assert.match(SYSTEM_PROMPT, /which way you expect them to move/);
+  assert.doesNotMatch(SYSTEM_PROMPT, /geopolitics field/);
 });
 
-test("validateOutput checks geopolitics against the headlines given", () => {
+test("validateOutput only accepts sources among the headlines given", () => {
   const para = "Gold rose about one percent on the day and sits near the middle of its yearly range.";
   const base = { headline: "Gold edges higher", body: [para, para, para] };
-  const geo = (body, sources) => ({ ...base, geopolitics: { body, sources } });
-  assert.deepEqual(validateOutput(geo([], []), 0), []);
-  assert.deepEqual(validateOutput(geo(["According to Outlet A, shipping is at risk."], [1]), 2), []);
-  assert.ok(validateOutput(geo(["Invented."], []), 0).includes("geopolitics written without headlines"));
-  assert.ok(validateOutput(geo(["x"], []), 2).includes("geopolitics cites no sources"));
-  assert.ok(validateOutput(geo(["x"], [3]), 2).includes("geopolitics cites an unknown source"));
-  assert.ok(validateOutput(geo(["x"], [0]), 2).includes("geopolitics cites an unknown source"));
-  assert.ok(validateOutput(geo(["x", ""], [1]), 2).includes("geopolitics empty paragraph"));
-  assert.ok(validateOutput(geo(["x", "y", "z", "w"], [1]), 2).includes("geopolitics too many paragraphs"));
-  assert.ok(validateOutput(geo([Array(16).fill(para).join(" ")], [1]), 2).some((p) => p.startsWith("geopolitics too long")));
-  assert.ok(validateOutput({ ...base, geopolitics: { body: "x" } }, 2).includes("geopolitics malformed"));
+  assert.deepEqual(validateOutput({ ...base, sources: [] }, 0), []);
+  assert.deepEqual(validateOutput({ ...base, sources: [1, 2] }, 2), []);
+  assert.deepEqual(validateOutput(base, 0), [], "older output without sources is still fine");
+  assert.ok(validateOutput({ ...base, sources: [1] }, 0).includes("cites an unknown source"));
+  assert.ok(validateOutput({ ...base, sources: [3] }, 2).includes("cites an unknown source"));
+  assert.ok(validateOutput({ ...base, sources: [0] }, 2).includes("cites an unknown source"));
+  assert.ok(validateOutput({ ...base, sources: [1.5] }, 2).includes("cites an unknown source"));
+  assert.ok(validateOutput({ ...base, sources: "1" }, 2).includes("sources malformed"));
 });
 
-test("buildDocument resolves cited headlines and drops non-http links", () => {
+test("buildDocument resolves cited headlines in order and drops non-http links", () => {
   const base = { pack: pack(), model: "m", generatedAt: 0, news: NEWS };
-  const doc = buildDocument({
-    ...base,
-    output: { headline: "h", body: ["b"], geopolitics: { body: [" Shipping risk. "], sources: [2, 1, 1, 9] } },
-  });
-  assert.deepEqual(doc.geopolitics, {
-    body: ["Shipping risk."],
-    sources: [
-      { source: "Outlet A", title: "Iran tightens control on the Strait of Hormuz", link: "https://a.example/hormuz" },
-      { source: "Outlet B", title: "Monthly photo digest", link: null },
-    ],
-  });
-  assert.equal(buildDocument({ ...base, output: { headline: "h", body: ["b"], geopolitics: { body: [], sources: [] } } }).geopolitics, null);
-  assert.equal(buildDocument({ ...base, output: { headline: "h", body: ["b"] } }).geopolitics, null);
+  const doc = buildDocument({ ...base, output: { headline: "h", body: ["b"], sources: [2, 1, 1, 9] } });
+  assert.deepEqual(doc.sources, [
+    { source: "Outlet A", title: "Iran tightens control on the Strait of Hormuz", link: "https://a.example/hormuz" },
+    { source: "Outlet B", title: "Monthly photo digest", link: null },
+  ]);
+  assert.deepEqual(buildDocument({ ...base, output: { headline: "h", body: ["b"], sources: [] } }).sources, []);
+  assert.deepEqual(buildDocument({ ...base, output: { headline: "h", body: ["b"] } }).sources, []);
+  assert.equal("geopolitics" in doc, false);
 });
