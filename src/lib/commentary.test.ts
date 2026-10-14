@@ -3,9 +3,11 @@ import assert from "node:assert/strict";
 import {
   commentaryAgeDays,
   fmtMove,
+  footerSources,
   isStale,
   needsRemote,
   newerNote,
+  safeHref,
   type Commentary,
 } from "./commentary.ts";
 
@@ -64,4 +66,25 @@ test("fmtMove renders percent, basis points, and a dash for nothing", () => {
   assert.equal(fmtMove({ pct: -0.5, bp: -12.4 }, true), "-12bp");
   assert.equal(fmtMove(null), "—");
   assert.equal(fmtMove({ pct: null }), "—");
+});
+
+test("safeHref passes only plain http(s) links", () => {
+  assert.equal(safeHref("https://a.example/p?x=1"), "https://a.example/p?x=1");
+  assert.equal(safeHref("http://a.example"), "http://a.example");
+  assert.equal(safeHref("javascript:alert(1)"), null);
+  assert.equal(safeHref("https://a.example/ bad"), null);
+  assert.equal(safeHref(null), null);
+});
+
+test("footerSources names what the note was written from", () => {
+  const geo = { body: ["p"], sources: [] };
+  const ed = { date: "2026-10-08", title: "t" };
+  assert.equal(footerSources({}), "the day’s numbers");
+  assert.equal(footerSources({ editorNote: ed }), "the day’s numbers and the editor’s note");
+  assert.equal(footerSources({ geopolitics: geo }), "the day’s numbers and selected news headlines");
+  assert.equal(
+    footerSources({ editorNote: ed, geopolitics: geo }),
+    "the day’s numbers, the editor’s note and selected news headlines",
+  );
+  assert.equal(footerSources({ geopolitics: { body: [], sources: [] } }), "the day’s numbers");
 });

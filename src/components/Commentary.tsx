@@ -6,9 +6,11 @@ import {
   commentaryAgeDays,
   fmtMove,
   fmtNoteDate,
+  footerSources,
   isStale,
   loadCommentary,
   loadOpen,
+  safeHref,
   saveOpen,
   type Commentary as Note,
 } from "../lib/commentary";
@@ -124,6 +126,49 @@ export function Commentary({ now }: { now: Date }) {
             </p>
           ))}
 
+          {/* The forward look at the editor's chosen news outlets (SPEC
+              §3.10): kept apart from the numbers-only read above, with
+              every headline it drew on listed and linked. */}
+          {note.geopolitics?.body.length ? (
+            <div className="read-geo">
+              <div
+                style={{
+                  fontSize: 10,
+                  letterSpacing: "0.18em",
+                  color: COLORS.muted,
+                  textTransform: "uppercase",
+                  marginBottom: 6,
+                }}
+              >
+                Geopolitics &middot; what the headlines mean for markets
+              </div>
+              {note.geopolitics.body.map((p, i) => (
+                <p key={i} className="read-para" style={{ color: COLORS.text }}>
+                  {p}
+                </p>
+              ))}
+              {note.geopolitics.sources.length ? (
+                <ul className="read-sources" style={{ color: COLORS.textDim }}>
+                  {note.geopolitics.sources.map((s, i) => {
+                    const href = safeHref(s.link);
+                    return (
+                      <li key={i}>
+                        <span style={{ color: COLORS.muted }}>{s.source} &middot;</span>{" "}
+                        {href ? (
+                          <a href={href} target="_blank" rel="noopener noreferrer nofollow">
+                            {s.title}
+                          </a>
+                        ) : (
+                          s.title
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              ) : null}
+            </div>
+          ) : null}
+
           {note.stats ? (
             <div className="read-strip">
               {STRIP_INSTRUMENTS.map(({ name, label, yieldLike }) => {
@@ -155,8 +200,7 @@ export function Commentary({ now }: { now: Date }) {
               textTransform: "uppercase",
             }}
           >
-            AI-generated from the day&rsquo;s numbers
-            {note.editorNote ? <> and the editor&rsquo;s note</> : null} · {noteDate}
+            AI-generated from {footerSources(note)} · {noteDate}
             {note.tradingDay ? "" : " · markets closed"} · not investment
             advice
           </div>
