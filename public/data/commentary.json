@@ -1,14 +1,15 @@
 {
   "date": "2026-10-13",
-  "generatedAt": 1791947939588,
+  "generatedAt": 1791949064572,
   "model": "claude-fable-5-1",
   "tradingDay": true,
-  "headline": "Oil-led inflation, not fear, is driving yields and the dollar higher",
+  "headline": "An energy shock on top of a hot economy: yields and the dollar win, gold loses",
   "body": [
-    "The configuration is an energy-led inflation squeeze on an economy that is not yet slowing: Brent at $107, up 75% year-to-date and 26% over three months, the 10-year at 5.22% after a 105 basis point rise this year, and the dollar index at 95% of its 52-week range. The Middle East supply channel is the driver — Drop Site News reports Ansarallah threatening to strike Aramco and Iran tightening control of the Strait of Hormuz — and bonds are pricing it as inflation to be fought, not as a growth shock to be cushioned.",
-    "The case that growth is holding sits in the relationships. Copper is at 94% of its yearly range, up 20% year-to-date, and the copper/gold ratio has risen 8.5% over the month; bitcoin has outrun gold by 13.5% in the same period and is up 34% in three months in a calm volatility regime. That is liquidity and risk appetite, not a flight to safety. Gold confirms it: down 4.7% on the month and at just 17% of its range while oil and yields rise, so the metal is trading off real rates rather than fear. The curve adds the policy read — the 30-10 spread has flattened 3 basis points over the month as the 10-year rose more than the long bond, the signature of markets expecting rates to lean against inflation rather than a fiscal term-premium blowout.",
-    "The tensions are in currencies. USD/CAD at a 52-week high with Brent above $100 is wrong on first principles; the resolution is that a dollar up 3% on the month is overwhelming the commodity support, and the dollar story outweighs the oil story. The rupee's 1.6% jump today is the outlier for an oil importer and looks exposed. This week's 5 basis point dip in the 10-year against a 4.8% rise in Brent is the one hint bonds may be starting to read oil as demand-destroying; the month's trend remains the better guide.",
-    "Directionally, further escalation along the lines Drop Site News describes is bullish for Brent, bearish for Treasuries at the 10-year point, supportive of the dollar and a headwind for the rupee. Brent's realized volatility at 1.2 times its own-year median says the market is pricing the risk but has not treated it as resolved."
+    "The dashboard reads as a supply-driven inflation shock landing on an economy that is still running hot, not a growth scare. Brent is up 75% year to date and the 10-year Treasury yield holds above 5.2%, while copper sits near the top of its 52-week range. Risk appetite is intact, inflation is the problem, and the market's answer has been higher yields and a stronger dollar rather than a rush into gold.",
+    "The growth leg of the argument rests on the copper/gold ratio, up 8% over the month, a classic cyclical signal. Bitcoin adds the liquidity leg: one coin now buys 20 ounces of gold after gaining 14% against it in a month, which speaks to appetite, not fear. Gold is the clearest casualty, down 4.6% on the month and sitting in the bottom fifth of its yearly range, crowded out by 5%-plus Treasury yields and a dollar index near the top of its own range.",
+    "The curve is where the signals disagree. The 10-year has climbed 24 basis points over the month while the 30-year rose 21, a bear flattening that says the market is pricing tight policy to meet an energy-driven inflation pulse rather than a durable boom. This week's pullback in yields alongside a 4.7% rise in Brent hints at a first flicker of demand worry; the month-long trend deserves more weight than five days, but it is the thing to watch.",
+    "The news feeds directly into the oil leg. According to Drop Site News, Ansarallah has threatened to strike Aramco and Iran is tightening control over the Strait of Hormuz, while the same outlet reports Zelenskyy saying Russia violated an \"energy ceasefire\". These are supply and shipping-route channels into Brent, whose volatility is already running about 20% above its own yearly median. Markets have priced part of this, but a hit on Saudi infrastructure or a Hormuz constriction is not fully in a $106 price: bullish for Brent, more upward pressure on Treasury yields through the inflation channel, and a further headwind for the oil-importing rupee.",
+    "Currencies confirm the dollar story. USD/CAD is at a 52-week high with oil above $100, a genuine outlier: the loonie is failing to collect its usual oil dividend, which says dollar strength is overpowering the commodity story. The rupee's 1% gain today is a dollar dip rather than a turn, with USD/INR still 6.7% higher on the year, exactly what an oil-importing currency should look like here. The notable absence is any haven bid in gold despite rising conflict risk; until that appears, the read stays inflationary rather than fearful."
   ],
   "editorNote": null,
   "sources": [
@@ -28,28 +29,28 @@
     "tradingDay": true,
     "instruments": {
       "Bitcoin": {
-        "last": 83622.835,
+        "last": 83848.445,
         "tradedToday": true,
         "change": {
           "day": {
-            "abs": 811.78,
-            "pct": 0.98
+            "abs": 1037.39,
+            "pct": 1.25
           },
           "week": {
-            "abs": -1705.9,
-            "pct": -2
+            "abs": -1480.29,
+            "pct": -1.73
           },
           "month": {
-            "abs": 6361.2078,
-            "pct": 8.23
+            "abs": 6586.8178,
+            "pct": 8.53
           },
           "threeMonths": {
-            "abs": 21343.872,
-            "pct": 34.27
+            "abs": 21569.482,
+            "pct": 34.63
           },
           "yearToDate": {
-            "abs": -4740.8872,
-            "pct": -5.36
+            "abs": -4515.2772,
+            "pct": -5.11
           }
         },
         "range52w": {
@@ -58,34 +59,34 @@
           "positionInRange": 0.45
         },
         "volatility": {
-          "annualizedPct": 14.9,
-          "vsOwnYearMedian": 0.44,
+          "annualizedPct": 15.2,
+          "vsOwnYearMedian": 0.45,
           "regime": "calm"
         }
       },
       "Gold": {
-        "last": 4185,
+        "last": 4189.2998,
         "tradedToday": true,
         "change": {
           "day": {
-            "abs": -12.2002,
-            "pct": -0.29
+            "abs": -7.9004,
+            "pct": -0.19
           },
           "week": {
-            "abs": 7.6001,
-            "pct": 0.18
+            "abs": 11.8999,
+            "pct": 0.28
           },
           "month": {
-            "abs": -205,
-            "pct": -4.67
+            "abs": -200.7002,
+            "pct": -4.57
           },
           "threeMonths": {
-            "abs": 115.3,
-            "pct": 2.83
+            "abs": 119.5999,
+            "pct": 2.94
           },
           "yearToDate": {
-            "abs": -156.1001,
-            "pct": -3.6
+            "abs": -151.8003,
+            "pct": -3.5
           }
         },
         "range52w": {
@@ -100,28 +101,28 @@
         }
       },
       "Copper": {
-        "last": 6.78,
+        "last": 6.7755,
         "tradedToday": true,
         "change": {
           "day": {
-            "abs": 0.0615,
-            "pct": 0.92
+            "abs": 0.057,
+            "pct": 0.85
           },
           "week": {
-            "abs": 0.1185,
-            "pct": 1.78
+            "abs": 0.114,
+            "pct": 1.71
           },
           "month": {
-            "abs": 0.223,
-            "pct": 3.4
+            "abs": 0.2185,
+            "pct": 3.33
           },
           "threeMonths": {
-            "abs": 0.45,
-            "pct": 7.11
+            "abs": 0.4455,
+            "pct": 7.04
           },
           "yearToDate": {
-            "abs": 1.15,
-            "pct": 20.43
+            "abs": 1.1455,
+            "pct": 20.35
           }
         },
         "range52w": {
@@ -136,28 +137,28 @@
         }
       },
       "Brent crude": {
-        "last": 106.63,
+        "last": 106.47,
         "tradedToday": true,
         "change": {
           "day": {
-            "abs": 1.26,
-            "pct": 1.2
+            "abs": 1.1,
+            "pct": 1.04
           },
           "week": {
-            "abs": 4.91,
-            "pct": 4.83
+            "abs": 4.75,
+            "pct": 4.67
           },
           "month": {
-            "abs": 2.21,
-            "pct": 2.12
+            "abs": 2.05,
+            "pct": 1.96
           },
           "threeMonths": {
-            "abs": 21.9,
-            "pct": 25.85
+            "abs": 21.74,
+            "pct": 25.66
           },
           "yearToDate": {
-            "abs": 45.78,
-            "pct": 75.23
+            "abs": 45.62,
+            "pct": 74.97
           }
         },
         "range52w": {
@@ -166,7 +167,7 @@
           "positionInRange": 0.8
         },
         "volatility": {
-          "annualizedPct": 55.6,
+          "annualizedPct": 55.5,
           "vsOwnYearMedian": 1.22,
           "regime": "normal"
         }
@@ -280,28 +281,28 @@
         }
       },
       "US Dollar Index (DXY)": {
-        "last": 102.098,
+        "last": 102.089,
         "tradedToday": true,
         "change": {
           "day": {
-            "abs": -0.295,
-            "pct": -0.29
+            "abs": -0.304,
+            "pct": -0.3
           },
           "week": {
-            "abs": 0.109,
-            "pct": 0.11
+            "abs": 0.1,
+            "pct": 0.1
           },
           "month": {
-            "abs": 3.003,
-            "pct": 3.03
+            "abs": 2.994,
+            "pct": 3.02
           },
           "threeMonths": {
-            "abs": 1.158,
-            "pct": 1.15
+            "abs": 1.149,
+            "pct": 1.14
           },
           "yearToDate": {
-            "abs": 3.818,
-            "pct": 3.89
+            "abs": 3.809,
+            "pct": 3.88
           }
         },
         "range52w": {
@@ -311,7 +312,7 @@
         },
         "volatility": {
           "annualizedPct": 4.2,
-          "vsOwnYearMedian": 0.9,
+          "vsOwnYearMedian": 0.91,
           "regime": "normal"
         }
       },
@@ -352,38 +353,38 @@
         }
       },
       "USD/INR": {
-        "last": 95.28,
+        "last": 95.7759,
         "tradedToday": true,
         "change": {
           "day": {
-            "abs": -1.5433,
-            "pct": -1.59
+            "abs": -1.0474,
+            "pct": -1.08
           },
           "week": {
-            "abs": -1.0628,
-            "pct": -1.1
+            "abs": -0.5669,
+            "pct": -0.59
           },
           "month": {
-            "abs": -0.26,
-            "pct": -0.27
+            "abs": 0.2359,
+            "pct": 0.25
           },
           "threeMonths": {
-            "abs": -1.0189,
-            "pct": -1.06
+            "abs": -0.523,
+            "pct": -0.54
           },
           "yearToDate": {
-            "abs": 5.5106,
-            "pct": 6.14
+            "abs": 6.0065,
+            "pct": 6.69
           }
         },
         "range52w": {
           "high": 96.8769,
           "low": 87.7403,
-          "positionInRange": 0.83
+          "positionInRange": 0.88
         },
         "volatility": {
-          "annualizedPct": 6.7,
-          "vsOwnYearMedian": 1.07,
+          "annualizedPct": 5.2,
+          "vsOwnYearMedian": 0.83,
           "regime": "normal"
         }
       }
@@ -396,22 +397,22 @@
         "shape": "flattening"
       },
       "goldOuncesPerBitcoin": {
-        "now": 19.98,
-        "changeOverMonthPct": 13.51
+        "now": 20.02,
+        "changeOverMonthPct": 13.7
       },
       "copperToGoldRatioX1000": {
-        "now": 1.62,
-        "changeOverMonthPct": 8.47
+        "now": 1.617,
+        "changeOverMonthPct": 8.28
       },
       "dollarIndexOwnMove": {
-        "dayPct": -0.29,
-        "weekPct": 0.11
+        "dayPct": -0.3,
+        "weekPct": 0.1
       }
     }
   },
   "usage": {
-    "inputTokens": 6396,
-    "outputTokens": 3802,
+    "inputTokens": 6478,
+    "outputTokens": 3869,
     "cacheReadTokens": 0,
     "cacheWriteTokens": 0
   }
