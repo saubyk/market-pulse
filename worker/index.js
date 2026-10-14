@@ -3,7 +3,9 @@
 // Not an open proxy: only Yahoo's v8 chart endpoint is forwarded — any other
 // target is rejected — and only browser requests from the allowed origins
 // (the deployed dashboard, plus localhost dev) or token-bearing requests
-// from the daily snapshot job are answered. Responses are
+// from the daily snapshot job are answered. The token path also forwards
+// the exact news feeds in ALLOWED_FEEDS, for the daily job's headline
+// step (scripts/news.mjs) when a feed blocks GitHub's runner IPs. Responses are
 // cached at the Cloudflare edge for CACHE_TTL_S, so however many visitors
 // the dashboard has, Yahoo sees at most one request per symbol per TTL
 // window per edge location.
@@ -15,6 +17,17 @@
 
 const ALLOWED_PREFIX = "https://query1.finance.yahoo.com/v8/finance/chart/";
 const CACHE_TTL_S = 120;
+
+// News feeds the token path may fetch (SPEC §3.10). Exact URLs, matching
+// news-sources.json — a new outlet needs a line here and a redeploy
+// before the worker will relay it. Never reachable from browsers.
+const ALLOWED_FEEDS = new Set([
+  "https://www.dropsitenews.com/feed",
+  "https://electronicintifada.net/rss.xml",
+  "https://thegrayzone.com/feed/",
+  "https://www.mintpressnews.com/feed/",
+]);
+const FEED_CACHE_TTL_S = 600;
 
 // Origin lock: only the deployed dashboard and local dev may use this
 // worker. Forks of market-pulse get a fast 403 here and fall through to
@@ -63,9 +76,8 @@ function corsHeaders(origin) {
 export default {
   async fetch(request, env) {
     const origin = request.headers.get("Origin");
-    const allowed =
-      isAllowedOrigin(origin) ||
-      (!origin && (await hasValidToken(request, env)));
+    const tokenOk = !origin && (await hasValidToken(request, env));
+    const allowed = isAllowedOrigin(origin) || tokenOk;
     if (!allowed) {
       return new Response("origin not allowed", { status: 403 });
     }
@@ -81,6 +93,9 @@ export default {
     }
 
     const target = new URL(request.url).searchParams.get("url");
+    if (tokenOk && target && ALLOWED_FEEDS.has(target)) {
+      return relayFeed(target);
+    }
     if (!target || !target.startsWith(ALLOWED_PREFIX)) {
       return new Response("target must be a Yahoo v8 chart URL", {
         status: 400,
@@ -110,3 +125,22 @@ export default {
     });
   },
 };
+
+// Server-to-server only, so no CORS headers.
+async function relayFeed(target) {
+  const upstream = await fetch(target, {
+    headers: {
+      "User-Agent":
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36",
+      Accept: "application/rss+xml, application/atom+xml, application/xml;q=0.9, */*;q=0.5",
+    },
+    cf: { cacheTtl: FEED_CACHE_TTL_S, cacheEverything: true },
+  });
+  return new Response(upstream.body, {
+    status: upstream.status,
+    headers: {
+      "Content-Type": upstream.headers.get("Content-Type") ?? "application/xml",
+      "Cache-Control": `public, max-age=${FEED_CACHE_TTL_S}`,
+    },
+  });
+}

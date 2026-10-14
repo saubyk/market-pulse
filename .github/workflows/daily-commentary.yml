@@ -15,8 +15,9 @@
 # pushes the commit to main.
 #
 # Secrets (all optional — the job degrades rather than fails without them):
-#   MP_PROXY_TOKEN     lets scripts/snapshot.mjs reach Yahoo through the
-#                      Cloudflare worker when Yahoo blocks the runner's IP.
+#   MP_PROXY_TOKEN     lets scripts/snapshot.mjs reach Yahoo, and
+#                      scripts/news.mjs reach news feeds, through the
+#                      Cloudflare worker when they block the runner's IP.
 #                      Must match `npx wrangler secret put MP_PROXY_TOKEN`.
 #   ANTHROPIC_API_KEY  enables the commentary step. Without it the job
 #                      still records the snapshot and skips the note.
@@ -83,6 +84,9 @@ jobs:
       - name: Fetch news headlines
         id: news
         continue-on-error: true
+        env:
+          # Feeds that block the runner's IP are retried through the worker.
+          MP_PROXY_TOKEN: ${{ secrets.MP_PROXY_TOKEN }}
         run: node scripts/news.mjs --out "$RUNNER_TEMP/news.json"
 
       # continue-on-error so a failed note (API outage, refusal, bad output)
