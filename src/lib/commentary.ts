@@ -14,6 +14,14 @@ export type Commentary = {
   // The editor's note the model was given (SPEC §3.9), or null; absent
   // on notes written before the field existed.
   editorNote?: { date: string; title: string } | null;
+  // The forward look at the news headlines (SPEC §3.10), or null when the
+  // model wrote none; absent on notes written before the field existed.
+  geopolitics?: CommentaryGeopolitics | null;
+};
+
+export type CommentaryGeopolitics = {
+  body: string[];
+  sources: { source: string; title: string; link: string | null }[];
 };
 
 // The promptFacts() rendering (scripts/commentary-lib.mjs). Only the
@@ -104,6 +112,20 @@ function isCommentary(d: unknown): d is Commentary {
     Array.isArray(c.body) &&
     c.body.every((p) => typeof p === "string")
   );
+}
+
+// A cited headline's link, only if it is plain http(s) — the page renders
+// it as an anchor, and a feed is not trusted to supply a safe URL.
+export function safeHref(link: unknown): string | null {
+  return typeof link === "string" && /^https?:\/\/[^\s]+$/i.test(link) ? link : null;
+}
+
+// What the footer says the note was written from.
+export function footerSources(c: Pick<Commentary, "editorNote" | "geopolitics">): string {
+  const parts = ["the day’s numbers"];
+  if (c.editorNote) parts.push("the editor’s note");
+  if (c.geopolitics?.body.length) parts.push("selected news headlines");
+  return parts.length === 1 ? parts[0] : `${parts.slice(0, -1).join(", ")} and ${parts[parts.length - 1]}`;
 }
 
 // Whole UTC days between the note's date and `now`.

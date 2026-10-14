@@ -1,0 +1,8 @@
+{
+  "sources": [
+    { "name": "Drop Site News", "feed": "https://www.dropsitenews.com/feed" },
+    { "name": "The Electronic Intifada", "feed": "https://electronicintifada.net/rss.xml" },
+    { "name": "The Grayzone", "feed": "https://thegrayzone.com/feed/" },
+    { "name": "MintPress News", "feed": "https://www.mintpressnews.com/feed/" }
+  ]
+}

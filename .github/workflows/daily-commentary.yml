@@ -9,7 +9,8 @@
 # session and dates its line by it (SPEC §3.6), and the commentary step
 # skips a session that already has a note (§3.8) — so a late, weekend or
 # holiday run is a cheap no-op rather than a wrong day. Appends one line
-# to public/data/snapshots.jsonl, builds the stats pack, asks Claude for
+# to public/data/snapshots.jsonl, builds the stats pack, fetches recent
+# headlines from the feeds in news-sources.json (§3.10), asks Claude for
 # the session's note (public/data/commentary.json + commentary.jsonl), and
 # pushes the commit to main.
 #
@@ -75,6 +76,15 @@ jobs:
       - name: Build stats pack
         run: node scripts/stats.mjs --history "$RUNNER_TEMP/history.json" --out "$RUNNER_TEMP/stats.json"
 
+      # Feeds that fail are skipped inside the script; only a malformed
+      # news-sources.json fails the step, and continue-on-error keeps that
+      # from costing the snapshot — the note is then written without
+      # headlines and the last step turns the run red.
+      - name: Fetch news headlines
+        id: news
+        continue-on-error: true
+        run: node scripts/news.mjs --out "$RUNNER_TEMP/news.json"
+
       # continue-on-error so a failed note (API outage, refusal, bad output)
       # never costs the day's snapshot: the commit still happens, and the
       # last step re-raises the failure so the run is red and notifies.
@@ -83,7 +93,7 @@ jobs:
         continue-on-error: true
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-        run: node scripts/commentary.mjs --stats "$RUNNER_TEMP/stats.json" ${{ inputs.regenerate == true && '--force' || '' }}
+        run: node scripts/commentary.mjs --stats "$RUNNER_TEMP/stats.json" --news "$RUNNER_TEMP/news.json" ${{ inputs.regenerate == true && '--force' || '' }}
 
       - name: Commit and push
         id: commit
@@ -107,8 +117,13 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh workflow run deploy-satusd.yml --ref main
 
-      - name: Fail the run if the commentary step failed
-        if: steps.commentary.outcome == 'failure'
+      - name: Fail the run if the news or commentary step failed
+        if: steps.news.outcome == 'failure' || steps.commentary.outcome == 'failure'
         run: |
-          echo "::error::Commentary generation failed — snapshot was committed, note was not. See the 'Generate commentary' step."
+          if [ "${{ steps.news.outcome }}" = "failure" ]; then
+            echo "::error::Fetching news failed (check news-sources.json) — the note was written without headlines."
+          fi
+          if [ "${{ steps.commentary.outcome }}" = "failure" ]; then
+            echo "::error::Commentary generation failed — snapshot was committed, note was not. See the 'Generate commentary' step."
+          fi
           exit 1

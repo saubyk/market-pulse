@@ -2,7 +2,8 @@
 // Generates the day's "Today's read" from a stats pack (SPEC §3.8):
 //
 //   node scripts/stats.mjs --history h.json --out stats.json
-//   node scripts/commentary.mjs --stats stats.json            # writes public/data/commentary.json + .jsonl
+//   node scripts/news.mjs --out news.json
+//   node scripts/commentary.mjs --stats stats.json --news news.json   # writes public/data/commentary.json + .jsonl
 //   node scripts/commentary.mjs --stats stats.json --dry-run  # prints the prompt, calls nothing
 //   node scripts/commentary.mjs --stats stats.json --force    # rewrite even if the session has a note
 //
@@ -25,7 +26,10 @@
 //
 // The editor's note (notes/*.md, SPEC §3.9) current on the session date
 // is appended to the user turn; the model may cite the event they describe,
-// attributed, and nothing else from outside the stats pack.
+// attributed, and nothing else from outside the stats pack in the main
+// note. The news headlines (--news, SPEC §3.10) follow it and feed only
+// the separate geopolitics field. --news is optional; a path that doesn't
+// exist (the news step failed) is logged and treated as no headlines.
 
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { dirname } from "node:path";
@@ -53,7 +57,7 @@ function arg(name) {
   return i >= 0 ? process.argv[i + 1] : null;
 }
 
-function requestParams(pack, note) {
+function requestParams(pack, note, news) {
   return {
     model: MODEL,
     max_tokens: MAX_TOKENS,
@@ -67,13 +71,13 @@ function requestParams(pack, note) {
     // the prompt cache lives minutes, so no cache_control: a write would
     // cost the 25% premium for a read that never comes.
     system: SYSTEM_PROMPT,
-    messages: [{ role: "user", content: userMessage(pack, note) }],
+    messages: [{ role: "user", content: userMessage(pack, note, news) }],
   };
 }
 
-async function generate(pack, note) {
+async function generate(pack, note, news) {
   const client = new Anthropic();
-  const response = await client.beta.messages.create(requestParams(pack, note));
+  const response = await client.beta.messages.create(requestParams(pack, note, news));
 
   if (response.stop_reason === "refusal") {
     const d = response.stop_details;
@@ -93,7 +97,7 @@ async function generate(pack, note) {
   } catch (e) {
     throw new Error(`response was not JSON: ${e.message}\n${text}`);
   }
-  const problems = validateOutput(output);
+  const problems = validateOutput(output, news.length);
   if (problems.length) {
     throw new Error(`output failed validation: ${problems.join("; ")}\n${text}`);
   }
@@ -104,7 +108,7 @@ async function generate(pack, note) {
 async function main() {
   const statsPath = arg("--stats");
   if (!statsPath) {
-    console.error("usage: node scripts/commentary.mjs --stats <stats.json> [--dry-run]");
+    console.error("usage: node scripts/commentary.mjs --stats <stats.json> [--news <news.json>] [--dry-run] [--force]");
     process.exit(2);
   }
   const dryRun = process.argv.includes("--dry-run");
@@ -112,9 +116,10 @@ async function main() {
   // The editor's note current on the session date (SPEC §3.9). A
   // malformed note throws here, like it fails the build.
   const note = currentNote(await readNotes(), pack.date);
+  const news = await readNews(arg("--news"));
 
   if (dryRun) {
-    const p = requestParams(pack, note);
+    const p = requestParams(pack, note, news);
     console.log(`model ${p.model} · effort ${p.output_config.effort} · max_tokens ${p.max_tokens}`);
     console.log("\n--- system ---\n" + SYSTEM_PROMPT);
     console.log("\n--- user ---\n" + p.messages[0].content);
@@ -138,14 +143,15 @@ async function main() {
   }
 
   const generatedAt = Date.now();
-  const { output, model, usage } = await generate(pack, note);
-  const doc = buildDocument({ pack, output, model, usage, generatedAt, note });
+  const { output, model, usage } = await generate(pack, note, news);
+  const doc = buildDocument({ pack, output, model, usage, generatedAt, note, news });
 
   await mkdir(dirname(COMMENTARY_PATH), { recursive: true });
   await writeFile(COMMENTARY_PATH, JSON.stringify(doc, null, 2) + "\n");
   await writeFile(ARCHIVE_PATH, upsertArchive(archive, doc));
 
   if (note) console.log(`editor's note given: ${note.file}`);
+  console.log(`news headlines given: ${news.length}; geopolitics ${doc.geopolitics ? `written, citing ${doc.geopolitics.sources.length}` : "empty"}`);
   const u = doc.usage ?? {};
   console.log(
     `wrote ${doc.date} commentary (${model}; in ${u.inputTokens} / cached ${u.cacheReadTokens} / out ${u.outputTokens} tokens)`,
@@ -154,6 +160,22 @@ async function main() {
     console.log(`note: answered by fallback model ${model}`);
   }
   console.log(`\n${doc.headline}\n\n${doc.body.join("\n\n")}`);
+  if (doc.geopolitics) console.log(`\nGeopolitics:\n\n${doc.geopolitics.body.join("\n\n")}`);
+}
+
+// The headlines written by scripts/news.mjs, or [] without --news. A
+// missing file means the news step failed; the note goes ahead without
+// a geopolitics section rather than failing too.
+async function readNews(path) {
+  if (!path) return [];
+  try {
+    const pack = JSON.parse(await readFile(path, "utf8"));
+    return Array.isArray(pack.items) ? pack.items : [];
+  } catch (e) {
+    if (e.code !== "ENOENT") throw e;
+    console.log(`news: ${path} not found — writing the note without headlines.`);
+    return [];
+  }
 }
 
 main().catch((e) => {
