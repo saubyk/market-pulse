@@ -8,6 +8,10 @@ export const MODEL = "claude-fable-5-1";
 // used over 3,000 output tokens on a note; weaving in the news adds more.
 export const MAX_TOKENS = 8000;
 export const EFFORT = "high";
+// Hard ceiling on the note's body. The prompt asks for ~300–380 words with
+// news woven in; the model has overshot that by ~10%, and a note that is
+// merely long should still ship rather than fail the day.
+export const MAX_WORDS = 500;
 
 export const COMMENTARY_PATH = "public/data/commentary.json";
 export const ARCHIVE_PATH = "public/data/commentary.jsonl";
@@ -45,7 +49,7 @@ What to write — one integrated note, not a market section followed by a news s
 - Weave the news in where it explains or challenges the numbers: bring a development in at the point in the argument where its channel matters (oil supply and shipping routes, sanctions and trade, conflict risk and safe-haven demand, defence spending and fiscal pressure, the dollar's role), test it against what the instruments show, and say whether markets appear to have priced it.
 - Make directional calls where a development gives a reason to: name the instruments it bears on and state with conviction which way you expect them to move as a result ("bullish for Brent", "a headwind for the dollar").
 - Mention an individual instrument only when it is evidence for the read or a genuine outlier; leave quiet, uninformative ones out, and leave out headlines with no channel to these markets.
-- Write to be read easily. Four or five short paragraphs of two or three sentences each, one idea per paragraph, roughly 180–280 words in total (three or four paragraphs and 120–180 words when there is no relevant news). Keep sentences short and plain, and put no more than two figures in any sentence — choose the figures that carry the argument rather than listing every move. Concise and authoritative: every sentence should carry a judgement or a fact, not filler.
+- Write to be read easily. Four or five short paragraphs of two or three sentences each, one idea per paragraph, roughly 300–380 words in total (three or four paragraphs and 150–220 words when there is no relevant news). Keep sentences short and plain, and put no more than two figures in any sentence — choose the figures that carry the argument rather than listing every move. Concise and authoritative: every sentence should carry a judgement or a fact, not filler.
 
 Rules:
 - Every figure you cite comes from the pack, with its horizon named ("up 3% this week", "12 basis points over the month"). Round to what a reader needs; quote yield moves in basis points.
@@ -210,7 +214,7 @@ export function validateOutput(out, newsCount = 0) {
       problems.push("empty paragraph");
     const words = out.body.join(" ").split(/\s+/).filter(Boolean).length;
     if (words < 40) problems.push(`body too short (${words} words)`);
-    if (words > 400) problems.push(`body too long (${words} words)`);
+    if (words > MAX_WORDS) problems.push(`body too long (${words} words)`);
   }
   if (out.sources != null) {
     if (!Array.isArray(out.sources)) problems.push("sources malformed");

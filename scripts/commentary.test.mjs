@@ -132,6 +132,10 @@ test("validateOutput accepts a sane note and rejects the broken ones", () => {
   assert.ok(validateOutput({ headline: "h", body: ["Too short."] }).some((p) => p.startsWith("body too short")));
   const long = Array(6).fill(para);
   assert.ok(validateOutput({ headline: "h", body: long }).includes("too many paragraphs"));
+  // Up to MAX_WORDS ships; beyond it is rejected.
+  const words = (n) => Array(n).fill("word").join(" ");
+  assert.deepEqual(validateOutput({ headline: "h", body: [words(250), words(250)] }), []);
+  assert.ok(validateOutput({ headline: "h", body: [words(250), words(251)] }).includes("body too long (501 words)"));
 });
 
 test("buildDocument records model, trimmed text, facts and usage", () => {
