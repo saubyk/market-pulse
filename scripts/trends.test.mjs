@@ -209,6 +209,7 @@ test("crossAssetStats: curve steepening, btc-in-gold, copper/gold, dollar", () =
   const n = 40;
   const series = {
     tnx: weekdays(n, () => 4.0),
+    fvx: weekdays(n, (i) => 3.8 + (i === n - 1 ? 0.3 : 0)), // 5s30s 0.7 → 0.6 today
     tyx: weekdays(n, (i) => 4.5 + (i === n - 1 ? 0.2 : 0)), // spread 0.5 → 0.7 today
     gold: weekdays(n, () => 2000),
     btc: weekdays(n, (i) => 60000 + i * 1000),
@@ -220,6 +221,12 @@ test("crossAssetStats: curve steepening, btc-in-gold, copper/gold, dollar", () =
   near(c.curve.spread1mAgo, 0.5);
   near(c.curve.change1mBp, 20);
   assert.equal(c.curve.shape, "steepening");
+  // 30Y − 5Y is its own read and can disagree with 30Y − 10Y.
+  near(c.curve5s30s.spread, 0.6);
+  near(c.curve5s30s.spread1mAgo, 0.7);
+  near(c.curve5s30s.change1mBp, -10);
+  assert.equal(c.curve5s30s.shape, "flattening");
+  assert.equal("curve5s30s" in crossAssetStats({ tnx: series.tnx, tyx: series.tyx }), false);
   near(c.btcInGoldOz.now, (60000 + 39 * 1000) / 2000);
   assert.ok(c.btcInGoldOz.m1.pct > 0);
   near(c.copperGold.now, 2); // 4/2000 × 1000

@@ -6,8 +6,10 @@
 //   node scripts/snapshot.mjs --history-out h.json   # also dump 1y closes
 //   node scripts/stats.mjs --history h.json          # → stats pack (M2)
 //
-// Fetches a year of daily closes for the nine Yahoo symbols (seven tiles
-// + the two currency-picker rates) plus BTC spot / 24h reference, and
+// Fetches a year of daily closes for the thirteen Yahoo symbols (seven
+// tiles, the two currency-picker rates, and the four off-dashboard
+// context series: S&P 500, 5-year yield, MOVE, VIX) plus BTC spot / 24h
+// reference, and
 // upserts one JSON line into public/data/snapshots.jsonl for the last
 // *settled* exchange session — dated by that session, not by the clock,
 // so a run that GitHub delays past midnight (or one on a weekend or a

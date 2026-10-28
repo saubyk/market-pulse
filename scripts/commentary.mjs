@@ -24,12 +24,14 @@
 // inside the same call; whichever model actually answered is recorded in
 // the output as `model`.
 //
-// The editor's note (notes/*.md, SPEC §3.9) current on the session date
-// is appended to the user turn, then the numbered news headlines (--news,
-// SPEC §3.10). The model weaves both into one note, attributed, and may
-// bring in no other outside events; the headlines it cites are recorded
-// under `sources`. --news is optional; a path that doesn't exist (the
-// news step failed) is logged and treated as no headlines.
+// The previous session's note (from the archive) is appended to the user
+// turn as the position to defend, update or retract, then the editor's
+// note (notes/*.md, SPEC §3.9) current on the session date, then the
+// numbered news headlines (--news, SPEC §3.10). The model weaves all of
+// it into one note, attributed, and may bring in no other outside
+// events; the headlines it cites are recorded under `sources`. --news is
+// optional; a path that doesn't exist (the news step failed) is logged
+// and treated as no headlines.
 
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { dirname } from "node:path";
@@ -44,6 +46,7 @@ import {
   SYSTEM_PROMPT,
   buildDocument,
   noteExistsFor,
+  previousNote,
   responseText,
   upsertArchive,
   userMessage,
@@ -57,7 +60,7 @@ function arg(name) {
   return i >= 0 ? process.argv[i + 1] : null;
 }
 
-function requestParams(pack, note, news) {
+function requestParams(pack, note, news, previous) {
   return {
     model: MODEL,
     max_tokens: MAX_TOKENS,
@@ -71,13 +74,13 @@ function requestParams(pack, note, news) {
     // the prompt cache lives minutes, so no cache_control: a write would
     // cost the 25% premium for a read that never comes.
     system: SYSTEM_PROMPT,
-    messages: [{ role: "user", content: userMessage(pack, note, news) }],
+    messages: [{ role: "user", content: userMessage(pack, note, news, previous) }],
   };
 }
 
-async function generate(pack, note, news) {
+async function generate(pack, note, news, previous) {
   const client = new Anthropic();
-  const response = await client.beta.messages.create(requestParams(pack, note, news));
+  const response = await client.beta.messages.create(requestParams(pack, note, news, previous));
 
   if (response.stop_reason === "refusal") {
     const d = response.stop_details;
@@ -118,20 +121,24 @@ async function main() {
   const note = currentNote(await readNotes(), pack.date);
   const news = await readNews(arg("--news"));
 
-  if (dryRun) {
-    const p = requestParams(pack, note, news);
-    console.log(`model ${p.model} · effort ${p.output_config.effort} · max_tokens ${p.max_tokens}`);
-    console.log("\n--- system ---\n" + SYSTEM_PROMPT);
-    console.log("\n--- user ---\n" + p.messages[0].content);
-    return;
-  }
-
   let archive = "";
   try {
     archive = await readFile(ARCHIVE_PATH, "utf8");
   } catch (e) {
     if (e.code !== "ENOENT") throw e;
   }
+  // The note published for the session before this one: the position
+  // the model settles with before making today's call (SPEC §3.8).
+  const previous = previousNote(archive, pack.date);
+
+  if (dryRun) {
+    const p = requestParams(pack, note, news, previous);
+    console.log(`model ${p.model} · effort ${p.output_config.effort} · max_tokens ${p.max_tokens}`);
+    console.log("\n--- system ---\n" + SYSTEM_PROMPT);
+    console.log("\n--- user ---\n" + p.messages[0].content);
+    return;
+  }
+
   if (!process.argv.includes("--force") && noteExistsFor(archive, pack.date)) {
     console.log(`session ${pack.date} already has a note — skipping (pass --force to regenerate).`);
     return;
@@ -143,13 +150,14 @@ async function main() {
   }
 
   const generatedAt = Date.now();
-  const { output, model, usage } = await generate(pack, note, news);
+  const { output, model, usage } = await generate(pack, note, news, previous);
   const doc = buildDocument({ pack, output, model, usage, generatedAt, note, news });
 
   await mkdir(dirname(COMMENTARY_PATH), { recursive: true });
   await writeFile(COMMENTARY_PATH, JSON.stringify(doc, null, 2) + "\n");
   await writeFile(ARCHIVE_PATH, upsertArchive(archive, doc));
 
+  console.log(previous ? `previous note given: ${previous.date}` : "previous note given: none");
   if (note) console.log(`editor's note given: ${note.file}`);
   console.log(`news headlines given: ${news.length}; cited: ${doc.sources.length}`);
   const u = doc.usage ?? {};

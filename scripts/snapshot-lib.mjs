@@ -6,7 +6,9 @@
 // deliberately separate from src/lib/fetchers.ts: the dashboard's own
 // fetch path, history range and sparkline must not change.
 
-// Same Yahoo symbols the dashboard uses (plus the two picker rates).
+// Same Yahoo symbols the dashboard uses (plus the two picker rates),
+// then the four context series (SPEC §3.6): recorded and given to the
+// commentary model as cross-checks, never shown on the dashboard.
 export const YAHOO_SYMBOLS = {
   copper: "HG=F",
   brent: "BZ=F",
@@ -17,18 +19,30 @@ export const YAHOO_SYMBOLS = {
   dxy: "DX-Y.NYB",
   cad: "CAD=X",
   inr: "INR=X",
+  spx: "^GSPC",
+  fvx: "^FVX",
+  move: "^MOVE",
+  vix: "^VIX",
 };
 
 export const YAHOO_KEYS = Object.keys(YAHOO_SYMBOLS);
 
-const YIELD_KEYS = new Set(["tnx", "tyx"]);
+// The off-dashboard context series: S&P 500, the 5-year yield (for a
+// 5s30s term-premium read), the MOVE index (Treasury-market volatility)
+// and the VIX. Same snapshot and stats treatment as the rest; the
+// commentary prompt renders them apart from the dashboard instruments.
+export const CONTEXT_KEYS = new Set(["spx", "fvx", "move", "vix"]);
+
+const YIELD_KEYS = new Set(["tnx", "tyx", "fvx"]);
 
 // Instruments with an exchange session, and the exchange-local hour at
 // which that session is over for the day: 17:00 New York for the CME /
 // ICE contracts and the dollar index, 15:00 Chicago for the CBOE yield
-// indices. A day's bar is "settled" once that instant has passed, and the
-// snapshot records settled bars only (SPEC §3.6). The FX pairs quote
-// around the clock and BTC never stops, so they are not in this table.
+// indices, 16:00 local for the S&P 500 and the two volatility indices
+// (the VIX settles 15:15 Chicago; MOVE is an end-of-day index). A day's
+// bar is "settled" once that instant has passed, and the snapshot
+// records settled bars only (SPEC §3.6). The FX pairs quote around the
+// clock and BTC never stops, so they are not in this table.
 export const SESSION_CLOSE_HOUR = {
   copper: 17,
   brent: 17,
@@ -36,6 +50,10 @@ export const SESSION_CLOSE_HOUR = {
   dxy: 17,
   tnx: 15,
   tyx: 15,
+  fvx: 15,
+  spx: 16,
+  move: 16,
+  vix: 16,
 };
 export const EXCHANGE_KEYS = new Set(Object.keys(SESSION_CLOSE_HOUR));
 
@@ -66,7 +84,7 @@ export function yahooChartUrl(symbol, range = "1y") {
 // *before*). History timestamps are normalised so that utcDate() of them
 // gives that local date.
 //
-// Applies the ^TNX/^TYX percent-vs-percent×10 heuristic from
+// Applies the ^TNX/^TYX/^FVX percent-vs-percent×10 heuristic from
 // src/lib/fetchers.ts (SPEC §3.5). `prev` is the settled bar before the
 // recorded one; meta.chartPreviousClose is never used (it is the close
 // before the *requested range*). Returns null with no usable data.

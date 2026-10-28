@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
+  CONTEXT_KEYS,
   EXCHANGE_KEYS,
   buildRecord,
   dateStartMs,
@@ -160,6 +161,13 @@ test("yields rescale ×10 quotes, settled bars included", () => {
   const near = (a, b) => assert.ok(Math.abs(a - b) < 1e-9, `${a} != ${b}`);
   near(q.close, 4.53);
   near(q.prev, 4.4);
+  // The 5-year context series is quoted the same way as ^TNX/^TYX.
+  const five = parseYahooChart(
+    "fvx",
+    chart({ price: 41.2, time: s(2026, 9, 4, 18, 59), bars: [[s(2026, 9, 4, 12, 20), 41.2]], tz: CHI }),
+    Date.UTC(2026, 8, 4, 21),
+  );
+  near(five.close, 4.12);
   // Percent-quoted yields are left alone; non-yields never rescale.
   const plain = parseYahooChart(
     "tyx",
@@ -216,6 +224,11 @@ test("sessionDate is the latest settled date among exchange keys", () => {
   // the later one wins (the line is replaced once the rest settle).
   assert.equal(sessionDate({ gold: { date: "2026-09-03" }, tnx: { date: "2026-09-04" } }), "2026-09-04");
   for (const k of EXCHANGE_KEYS) assert.ok(YAHOO_KEYS.includes(k));
+  // The context series are exchange-traded and fetched like the rest.
+  for (const k of CONTEXT_KEYS) {
+    assert.ok(YAHOO_KEYS.includes(k), `${k} not fetched`);
+    assert.ok(EXCHANGE_KEYS.has(k), `${k} has no session close`);
+  }
 });
 
 test("utcDate uses the UTC calendar day", () => {

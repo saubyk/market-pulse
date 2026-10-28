@@ -8,13 +8,17 @@
 // close at or before N days ago", so weekends and holidays never produce
 // a missing comparison, only a slightly older one.
 
-import { EXCHANGE_KEYS, YAHOO_KEYS, dateStartMs, utcDate } from "./snapshot-lib.mjs";
+import { CONTEXT_KEYS, EXCHANGE_KEYS, YAHOO_KEYS, dateStartMs, utcDate } from "./snapshot-lib.mjs";
 
+// Everything the pack carries stats for: the dashboard instruments, the
+// two picker rates, the four off-dashboard context series, and BTC.
 export const INSTRUMENT_KEYS = [...YAHOO_KEYS, "btc"];
 
 // Instruments whose level is a percentage (yields): their day-to-day
 // moves are reported in basis points as well as percent-of-level.
-export const YIELD_KEYS = new Set(["tnx", "tyx"]);
+export const YIELD_KEYS = new Set(["tnx", "tyx", "fvx"]);
+
+export { CONTEXT_KEYS };
 
 // Instruments with an exchange session (defined with the snapshot's
 // session table). FX pairs (jpy/cad/inr) quote 24/5 and print on Sunday
@@ -254,6 +258,19 @@ export function crossAssetStats(series) {
   if (curve.length) {
     const [now, ago] = lastAndAgo(curve, HORIZONS.m1);
     out.curve = {
+      spread: round(now, 4),
+      spread1mAgo: ago == null ? null : round(ago, 4),
+      change1mBp: ago == null ? null : round((now - ago) * 100, 2),
+      shape: ago == null ? null : now > ago ? "steepening" : now < ago ? "flattening" : "unchanged",
+    };
+  }
+
+  // 30Y − 5Y in percentage points: the term-premium read, cleaner than
+  // 30Y − 10Y because the 5-year is closer to the policy rate.
+  const curve5s30s = spreadSeries(series.tyx, series.fvx);
+  if (curve5s30s.length) {
+    const [now, ago] = lastAndAgo(curve5s30s, HORIZONS.m1);
+    out.curve5s30s = {
       spread: round(now, 4),
       spread1mAgo: ago == null ? null : round(ago, 4),
       change1mBp: ago == null ? null : round((now - ago) * 100, 2),
