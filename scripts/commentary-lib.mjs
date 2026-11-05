@@ -11,10 +11,12 @@ export const MODEL = "claude-fable-5-1";
 export const MAX_TOKENS = 8000;
 export const EFFORT = "high";
 // Hard ceiling on the note's body. The prompt asks for ~320–420 words with
-// news woven in and a line on the previous note; the model has overshot
-// its target by ~10% before, and a note that is merely long should still
-// ship rather than fail the day.
+// news woven in and a line on the previous note, and states this ceiling
+// as a hard limit. The model still overshoots on heavy news days (513–539
+// words on 2026-10-29, 10-30 and 11-04), so a draft over it is not shipped
+// but sent back to be cut (draftNote) — up to MAX_ATTEMPTS drafts in all.
 export const MAX_WORDS = 500;
+export const MAX_ATTEMPTS = 3;
 
 export const COMMENTARY_PATH = "public/data/commentary.json";
 export const ARCHIVE_PATH = "public/data/commentary.jsonl";
@@ -74,7 +76,7 @@ What to write, one integrated note, not a market section followed by a news sect
 - Weave the news in where it explains or challenges the numbers: bring a development in at the point in the argument where its channel matters (oil supply and shipping routes, sanctions and trade, conflict risk and safe-haven demand, defence spending and fiscal pressure, the dollar's role), test it against what the instruments show, and say whether markets appear to have priced it.
 - Say what you would own. Close with your book: what you would hold, add to or avoid in this configuration among these ten instruments, the level or condition that would prove you wrong, and what you are watching next. Levels, conditions and horizons are welcome when you mean them. This is your own view talking its book, not advice to the reader: no "you should", no sizing.
 - Mention an individual instrument only when it is evidence for the read or a genuine outlier; leave quiet, uninformative ones out, and leave out headlines with no channel to these markets.
-- Write to be read easily. Four or five short paragraphs of two or three sentences each, one idea per paragraph, roughly 320–420 words in total (three or four paragraphs and 180–260 words when there is no relevant news and no previous note). Keep sentences short and plain, and put no more than two figures in any sentence; choose the figures that carry the argument rather than listing every move. Direct and a little combative is fine; sneering is not. Every sentence should carry a judgement or a fact, not filler.
+- Write to be read easily. Four or five short paragraphs of two or three sentences each, one idea per paragraph, roughly 320–420 words in total (three or four paragraphs and 180–260 words when there is no relevant news and no previous note), and never more than ${MAX_WORDS} words: that is a hard limit, and a longer note is rejected. On a heavy news day, cut detail rather than run long. Keep sentences short and plain, and put no more than two figures in any sentence; choose the figures that carry the argument rather than listing every move. Direct and a little combative is fine; sneering is not. Every sentence should carry a judgement or a fact, not filler.
 
 Rules:
 - Every figure you cite comes from the pack, with its horizon named ("up 3% this week", "12 basis points over the month"). Round to what a reader needs; quote yield moves in basis points.
@@ -352,6 +354,61 @@ export function upsertArchive(text, doc) {
   lines.push(doc);
   lines.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
   return lines.map((d) => JSON.stringify(d)).join("\n") + "\n";
+}
+
+// The follow-up user turn when a draft fails validation: what was wrong,
+// and the limits it must meet. Static apart from the problems themselves.
+export function revisionRequest(problems) {
+  return (
+    `That note was rejected: ${problems.join("; ")}. ` +
+    `Rewrite it to fix this. The body must be at most ${MAX_WORDS} words — aim for about 400 — ` +
+    "in no more than five paragraphs, with a headline under 90 characters. " +
+    "Keep the same call and argument; cut the weakest detail rather than compressing every sentence. " +
+    "Cite only the headline numbers you were given. Answer with the full JSON object again."
+  );
+}
+
+// Generate a note that passes validateOutput. `send(params)` makes one
+// Messages API call (the SDK in commentary.mjs, a fake in tests). A draft
+// that fails validation, or isn't JSON, is sent back with what was wrong
+// (revisionRequest) as a further turn, up to MAX_ATTEMPTS drafts; the last
+// failure is thrown. A refusal or truncation is thrown at once — a
+// revision request can't fix either. Usage is summed over every call.
+// `params` is not mutated.
+export async function draftNote(send, params, newsCount = 0, { attempts = MAX_ATTEMPTS, log = () => {} } = {}) {
+  const messages = [...params.messages];
+  const usage = { input_tokens: 0, output_tokens: 0, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 };
+  let failure = null;
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    const response = await send({ ...params, messages: [...messages] });
+    for (const k of Object.keys(usage)) usage[k] += response.usage?.[k] ?? 0;
+
+    if (response.stop_reason === "refusal") {
+      const d = response.stop_details;
+      throw new Error(`model refused (category ${d?.category ?? "unknown"}): ${d?.explanation ?? ""}`);
+    }
+    if (response.stop_reason === "max_tokens") {
+      throw new Error("response truncated at max_tokens");
+    }
+    const text = responseText(response);
+    if (!text) throw new Error("no text block in response");
+
+    let problems;
+    let output = null;
+    try {
+      output = JSON.parse(text);
+      problems = validateOutput(output, newsCount);
+    } catch (e) {
+      problems = [`response was not JSON (${e.message})`];
+    }
+    if (!problems.length) return { output, model: response.model, usage, attempts: attempt };
+
+    failure = `output failed validation: ${problems.join("; ")}\n${text}`;
+    log(`draft ${attempt} of ${attempts} rejected: ${problems.join("; ")}`);
+    messages.push({ role: "assistant", content: [{ type: "text", text }] });
+    messages.push({ role: "user", content: revisionRequest(problems) });
+  }
+  throw new Error(failure);
 }
 
 // Pull the JSON text out of a Messages response: the first text block.

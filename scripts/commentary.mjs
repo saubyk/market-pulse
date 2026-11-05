@@ -45,12 +45,11 @@ import {
   OUTPUT_SCHEMA,
   SYSTEM_PROMPT,
   buildDocument,
+  draftNote,
   noteExistsFor,
   previousNote,
-  responseText,
   upsertArchive,
   userMessage,
-  validateOutput,
 } from "./commentary-lib.mjs";
 import { currentNote } from "./notes-lib.mjs";
 import { readNotes } from "./notes.mjs";
@@ -80,32 +79,12 @@ function requestParams(pack, note, news, previous) {
 
 async function generate(pack, note, news, previous) {
   const client = new Anthropic();
-  const response = await client.beta.messages.create(requestParams(pack, note, news, previous));
-
-  if (response.stop_reason === "refusal") {
-    const d = response.stop_details;
-    throw new Error(
-      `model refused (category ${d?.category ?? "unknown"}): ${d?.explanation ?? ""}`,
-    );
-  }
-  if (response.stop_reason === "max_tokens") {
-    throw new Error("response truncated at max_tokens");
-  }
-
-  const text = responseText(response);
-  if (!text) throw new Error("no text block in response");
-  let output;
-  try {
-    output = JSON.parse(text);
-  } catch (e) {
-    throw new Error(`response was not JSON: ${e.message}\n${text}`);
-  }
-  const problems = validateOutput(output, news.length);
-  if (problems.length) {
-    throw new Error(`output failed validation: ${problems.join("; ")}\n${text}`);
-  }
-
-  return { output, model: response.model, usage: response.usage };
+  return draftNote(
+    (params) => client.beta.messages.create(params),
+    requestParams(pack, note, news, previous),
+    news.length,
+    { log: (msg) => console.log(msg) },
+  );
 }
 
 async function main() {
@@ -150,7 +129,7 @@ async function main() {
   }
 
   const generatedAt = Date.now();
-  const { output, model, usage } = await generate(pack, note, news, previous);
+  const { output, model, usage, attempts } = await generate(pack, note, news, previous);
   const doc = buildDocument({ pack, output, model, usage, generatedAt, note, news });
 
   await mkdir(dirname(COMMENTARY_PATH), { recursive: true });
@@ -162,7 +141,7 @@ async function main() {
   console.log(`news headlines given: ${news.length}; cited: ${doc.sources.length}`);
   const u = doc.usage ?? {};
   console.log(
-    `wrote ${doc.date} commentary (${model}; in ${u.inputTokens} / cached ${u.cacheReadTokens} / out ${u.outputTokens} tokens)`,
+    `wrote ${doc.date} commentary (${model}; draft ${attempts}; in ${u.inputTokens} / cached ${u.cacheReadTokens} / out ${u.outputTokens} tokens)`,
   );
   if (!String(model).startsWith(MODEL)) {
     console.log(`note: answered by fallback model ${model}`);

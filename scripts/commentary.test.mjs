@@ -2,11 +2,14 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   CONTEXT_ORDER,
+  MAX_ATTEMPTS,
+  MAX_WORDS,
   NAMES,
   OUTPUT_SCHEMA,
   PROMPT_ORDER,
   SYSTEM_PROMPT,
   buildDocument,
+  draftNote,
   noteExistsFor,
   previousNote,
   promptFacts,
@@ -188,6 +191,8 @@ test("the system prompt is frozen text with the load-bearing rules", () => {
   assert.match(SYSTEM_PROMPT, /two or three sentences each, one idea per paragraph/);
   assert.match(SYSTEM_PROMPT, /no more than two figures in any sentence/);
   assert.match(SYSTEM_PROMPT, /tradingDay is false/);
+  // The validator's word ceiling is stated as a hard limit, not left implicit.
+  assert.match(SYSTEM_PROMPT, new RegExp(`never more than ${MAX_WORDS} words`));
   // Nothing date- or run-dependent may be interpolated, or caching breaks.
   assert.doesNotMatch(SYSTEM_PROMPT, /\d{4}-\d{2}-\d{2}/);
 });
@@ -355,4 +360,73 @@ test("buildDocument resolves cited headlines in order and drops non-http links",
   assert.deepEqual(buildDocument({ ...base, output: { headline: "h", body: ["b"], sources: [] } }).sources, []);
   assert.deepEqual(buildDocument({ ...base, output: { headline: "h", body: ["b"] } }).sources, []);
   assert.equal("geopolitics" in doc, false);
+});
+
+// draftNote: the generate → validate → revise loop, driven by a fake API.
+const words = (n) => Array(n).fill("word").join(" ");
+const reply = (out, usage = { input_tokens: 100, output_tokens: 10 }) => ({
+  model: "claude-fable-5-1",
+  stop_reason: "end_turn",
+  content: [{ type: "text", text: JSON.stringify(out) }],
+  usage,
+});
+const BASE = { model: "m", system: "s", messages: [{ role: "user", content: "Write today's note." }] };
+
+function fakeApi(replies) {
+  const sent = [];
+  return {
+    sent,
+    send: async (params) => {
+      sent.push(structuredClone(params));
+      return replies[sent.length - 1];
+    },
+  };
+}
+
+test("draftNote ships a valid first draft with one call", async () => {
+  const api = fakeApi([reply({ headline: "h", body: [words(300)], sources: [] })]);
+  const r = await draftNote(api.send, BASE, 0);
+  assert.equal(api.sent.length, 1);
+  assert.equal(r.attempts, 1);
+  assert.equal(r.output.body[0], words(300));
+});
+
+test("draftNote sends an over-long draft back to be cut and ships the revision", async () => {
+  const long = { headline: "h", body: [words(300), words(213)], sources: [] };
+  const cut = { headline: "h", body: [words(200), words(190)], sources: [] };
+  const api = fakeApi([reply(long), reply(cut, { input_tokens: 200, output_tokens: 20 })]);
+  const r = await draftNote(api.send, BASE, 0);
+  assert.equal(r.attempts, 2);
+  assert.deepEqual(r.output, cut);
+  // The revision request carries the rejected draft and says exactly what was wrong.
+  const msgs = api.sent[1].messages;
+  assert.equal(msgs.length, 3);
+  assert.deepEqual(msgs[0], BASE.messages[0]);
+  assert.equal(msgs[1].role, "assistant");
+  assert.equal(JSON.parse(msgs[1].content[0].text).body[1], words(213));
+  assert.equal(msgs[2].role, "user");
+  assert.match(msgs[2].content, /body too long \(513 words\)/);
+  assert.match(msgs[2].content, new RegExp(`${MAX_WORDS} words`));
+  // The caller's params are not mutated, and usage covers every call.
+  assert.equal(BASE.messages.length, 1);
+  assert.equal(r.usage.input_tokens, 300);
+  assert.equal(r.usage.output_tokens, 30);
+});
+
+test("draftNote gives up after MAX_ATTEMPTS drafts that all fail validation", async () => {
+  const long = reply({ headline: "h", body: [words(520)], sources: [] });
+  const api = fakeApi(Array(MAX_ATTEMPTS + 1).fill(long));
+  await assert.rejects(draftNote(api.send, BASE, 0), /body too long \(520 words\)/);
+  assert.equal(api.sent.length, MAX_ATTEMPTS);
+});
+
+test("draftNote does not retry a refusal or a truncation", async () => {
+  const refused = { model: "m", stop_reason: "refusal", stop_details: { category: "x" }, content: [] };
+  const api = fakeApi([refused, reply({ headline: "h", body: [words(300)], sources: [] })]);
+  await assert.rejects(draftNote(api.send, BASE, 0), /model refused/);
+  assert.equal(api.sent.length, 1);
+  const cut = { model: "m", stop_reason: "max_tokens", content: [] };
+  const api2 = fakeApi([cut]);
+  await assert.rejects(draftNote(api2.send, BASE, 0), /truncated at max_tokens/);
+  assert.equal(api2.sent.length, 1);
 });
