@@ -1,195 +1,195 @@
 {
-  "date": "2026-11-23",
-  "generatedAt": 1795500101098,
+  "date": "2026-11-24",
+  "generatedAt": 1795582420999,
   "model": "claude-fable-5-1",
   "tradingDay": true,
-  "headline": "Relief, not a verdict: I keep the 10-year, add gold and concede the dollar is winning",
+  "headline": "One day of relief, then everything sold: gold fails my tell and I stop adding",
   "body": [
-    "Today is a relief rally, not a verdict. Stocks bounced 4.7% and the VIX fell to 26.6, well off the top of its range, while gold rose 3.2% on the same day the dollar made a 52-week high. A metal rallying against a strong dollar is the tell I care about, and it showed up. But the 5-year sold off 3 basis points while the 30-year rallied 1: the cut panic is being partly unwound and nobody is dumping the long end.",
-    "Friday's read held where it mattered. The 10-year is unchanged at 4.92%, inside my 5.15% line, and gold has gained since my first buy at $3,539. What I got wrong is the character of the gold bid: it came on a collapsing VIX, so it is relief buying rather than fear. Over the week the front end still led, down 21 basis points against 17 for the 30-year, so the direction stands.",
-    "The dollar is winning this quarter and I will say it plainly. The index is at the top of its year's range, up 5.4% over three months, while gold is down 22% over the same span and sits near its 52-week low. That is the opposite of my tell. I read it as a timing problem, a funding squeeze running ahead of the slow tide, because the 30-year minus 5-year spread has still widened 6 basis points over the month. If the dollar keeps printing highs with gold under $3,450 and the long end rallying harder than the front, the thesis is wrong for this cycle.",
-    "Oil is the missing accelerant. Brent is down 20% over the month to $89, so the market is pricing no supply shock, and the rupee has strengthened 2.4% over the month: importers are being paid, not punished. Bitcoin managed 0.6% on a day stocks rose 4.7%, so it could not even rally as a risk asset; it buys 16.6 ounces of gold, down 17.5% over the month, and that ratio has not turned.",
-    "I keep the 10-year and the dollar, and I add to gold because it rose with the dollar at a high. I stay out of bitcoin, Brent and copper, and I still do not own the 30-year at 5.29%. I am wrong on the 10-year above 5.15% with stocks falling, and wrong on gold below $3,450. MOVE at 101 is still three-quarters of the way up its range, so one good day has not calmed the bond market; I watch it and the 30-year minus 5-year spread, which needs to resume toward 70 basis points."
+    "Yesterday's relief lasted one session. Today everything was sold: gold fell 2.9% and copper 3.2%. Bitcoin and stocks went with them while the dollar slipped 0.3% and bonds barely moved. That is cash being raised, not inflation being feared, and gold at a 52-week low on a softer dollar is the opposite of the tell I lean on.",
+    "I added to gold yesterday on one day's evidence and I paid for it; a bid that comes on a collapsing VIX was never going to hold. What held is the shape of rates: the 10-year at 4.90% sits inside my 5.15% line. The front end still leads, with the 5-year down 19 basis points on the week against 17 for the 30-year. The view tightens rather than changes: I stop adding to gold and keep the rates position.",
+    "This is a growth deflation, not a financing squeeze, and I should say so. Copper is down 16% on the month and Brent 22%: no oil shock, and the copper/gold ratio keeps falling. Yields dropped 20 basis points over the week while stocks lost 1.9%, which is a slowdown trade, not long yields rising into falling equities. What still works for the thesis is the long end's refusal to join: the 30-year is down just 2 basis points on the month against 9 for the 5-year. That spread is 58 basis points and widening, so the extra yield demanded to hold the long bond is being built even as growth is marked down.",
+    "The dollar has won this quarter. The index sits at 96% of its year's range, up 5% over three months, and USD/CAD printed a 52-week high as oil fell: producers are being punished, not paid. The rupee is 2% stronger over the month for the same reason; without the oil accelerant, importers are fine. Gold's selling is orderly, with the VIX easing to 26.4 on a down day, and that is worse for me because it means gold is being sold down like any other asset, not fled to. Bitcoin sits at the bottom of its range and buys 16.6 ounces of gold, down 17% on the month; it is a risk asset and nothing more.",
+    "I keep the 10-year and the dollar, hold the gold I have without adding, and stay out of bitcoin, copper, Brent and the 30-year at 5.29%. Gold below $3,450 with the dollar at a new high ends the gold position and says the thesis is wrong for this cycle, not merely early. The 10-year above 5.15% with stocks falling is wrong the other way. I am watching MOVE, at 99 and still three-quarters up its range, and the 30-year minus 5-year spread, which needs to keep widening toward 70 basis points. If the long end starts rallying faster than the front, this is a plain recession and I move with it."
   ],
   "editorNote": null,
   "sources": [],
   "stats": {
-    "date": "2026-11-23",
+    "date": "2026-11-24",
     "tradingDay": true,
     "instruments": {
       "Bitcoin": {
-        "last": 60495.115,
+        "last": 58957.315,
         "tradedToday": true,
         "change": {
           "day": {
-            "abs": 373.8133,
-            "pct": 0.62
+            "abs": -1537.8,
+            "pct": -2.54
           },
           "week": {
-            "abs": -4459.11,
-            "pct": -6.86
+            "abs": -5487.2,
+            "pct": -8.51
           },
           "month": {
-            "abs": -20607.1982,
-            "pct": -25.41
+            "abs": -21853.2559,
+            "pct": -27.04
           },
           "threeMonths": {
-            "abs": -17217.2051,
-            "pct": -22.15
+            "abs": -20016.5719,
+            "pct": -25.35
           },
           "yearToDate": {
-            "abs": -27868.6072,
-            "pct": -31.54
+            "abs": -29406.4072,
+            "pct": -33.28
           }
         },
         "range52w": {
           "high": 96898.7607,
           "low": 58263.525,
-          "positionInRange": 0.06
+          "positionInRange": 0.02
         },
         "volatility": {
-          "annualizedPct": 46.6,
-          "vsOwnYearMedian": 1.43,
-          "regime": "choppy"
+          "annualizedPct": 40.7,
+          "vsOwnYearMedian": 1.25,
+          "regime": "normal"
         }
       },
       "Gold": {
-        "last": 3651.3999,
+        "last": 3547.3,
         "tradedToday": true,
         "change": {
           "day": {
-            "abs": 112.3999,
-            "pct": 3.18
+            "abs": -104.0999,
+            "pct": -2.85
           },
           "week": {
-            "abs": -217.6001,
-            "pct": -5.62
+            "abs": -244.7,
+            "pct": -6.45
           },
           "month": {
-            "abs": -358.6001,
-            "pct": -8.94
+            "abs": -462.7,
+            "pct": -11.54
           },
           "threeMonths": {
-            "abs": -1046.3999,
-            "pct": -22.27
+            "abs": -1147.2,
+            "pct": -24.44
           },
           "yearToDate": {
-            "abs": -689.7002,
-            "pct": -15.89
+            "abs": -793.8,
+            "pct": -18.29
           }
         },
         "range52w": {
           "high": 5318.3999,
           "low": 3533.6001,
-          "positionInRange": 0.07
+          "positionInRange": 0.01
         },
         "volatility": {
-          "annualizedPct": 34.1,
-          "vsOwnYearMedian": 1.4,
-          "regime": "normal"
+          "annualizedPct": 34.5,
+          "vsOwnYearMedian": 1.42,
+          "regime": "choppy"
         }
       },
       "Copper": {
-        "last": 5.627,
+        "last": 5.447,
         "tradedToday": true,
         "change": {
           "day": {
-            "abs": 0.162,
-            "pct": 2.96
+            "abs": -0.18,
+            "pct": -3.2
           },
           "week": {
-            "abs": -0.3455,
-            "pct": -5.78
+            "abs": -0.447,
+            "pct": -7.58
           },
           "month": {
-            "abs": -0.8705,
-            "pct": -13.4
+            "abs": -1.0505,
+            "pct": -16.17
           },
           "threeMonths": {
-            "abs": -0.972,
-            "pct": -14.73
+            "abs": -1.2625,
+            "pct": -18.82
           },
           "yearToDate": {
-            "abs": -0.003,
-            "pct": -0.05
+            "abs": -0.183,
+            "pct": -3.25
           }
         },
         "range52w": {
           "high": 6.897,
           "low": 4.962,
-          "positionInRange": 0.34
+          "positionInRange": 0.25
         },
         "volatility": {
-          "annualizedPct": 26.6,
+          "annualizedPct": 26.8,
           "vsOwnYearMedian": 1.03,
           "regime": "normal"
         }
       },
       "Brent crude": {
-        "last": 89.37,
+        "last": 87.53,
         "tradedToday": true,
         "change": {
           "day": {
-            "abs": -0.5,
-            "pct": -0.56
+            "abs": -1.84,
+            "pct": -2.06
           },
           "week": {
-            "abs": -2.17,
-            "pct": -2.37
+            "abs": -5.21,
+            "pct": -5.62
           },
           "month": {
-            "abs": -22.29,
-            "pct": -19.96
+            "abs": -24.13,
+            "pct": -21.61
           },
           "threeMonths": {
-            "abs": -2.8,
-            "pct": -3.04
+            "abs": -1.05,
+            "pct": -1.18
           },
           "yearToDate": {
-            "abs": 28.52,
-            "pct": 46.87
+            "abs": 26.68,
+            "pct": 43.85
           }
         },
         "range52w": {
           "high": 118.35,
           "low": 58.92,
-          "positionInRange": 0.51
+          "positionInRange": 0.48
         },
         "volatility": {
-          "annualizedPct": 62.1,
-          "vsOwnYearMedian": 1.2,
+          "annualizedPct": 61.8,
+          "vsOwnYearMedian": 1.18,
           "regime": "normal"
         }
       },
       "US 10-year Treasury yield": {
-        "last": 4.918,
+        "last": 4.904,
         "tradedToday": true,
         "change": {
           "day": {
-            "bp": 0.6,
-            "pct": 0.12
+            "bp": -1.4,
+            "pct": -0.28
           },
           "week": {
-            "bp": -20.3,
-            "pct": -3.96
+            "bp": -19.9,
+            "pct": -3.9
           },
           "month": {
-            "bp": -7,
-            "pct": -1.4
+            "bp": -8.4,
+            "pct": -1.68
           },
           "threeMonths": {
-            "bp": 21.4,
-            "pct": 4.55
+            "bp": 26.5,
+            "pct": 5.71
           },
           "yearToDate": {
-            "bp": 75.5,
-            "pct": 18.14
+            "bp": 74.1,
+            "pct": 17.8
           }
         },
         "range52w": {
           "high": 5.311,
           "low": 3.962,
-          "positionInRange": 0.71
+          "positionInRange": 0.7
         },
         "volatility": {
           "annualizedPct": 19.6,
@@ -198,28 +198,28 @@
         }
       },
       "US 30-year Treasury yield": {
-        "last": 5.294,
+        "last": 5.292,
         "tradedToday": true,
         "change": {
           "day": {
-            "bp": -0.9,
-            "pct": -0.17
+            "bp": -0.2,
+            "pct": -0.04
           },
           "week": {
-            "bp": -17.3,
-            "pct": -3.16
+            "bp": -16.6,
+            "pct": -3.04
           },
           "month": {
-            "bp": -2.1,
-            "pct": -0.39
+            "bp": -2.3,
+            "pct": -0.43
           },
           "threeMonths": {
-            "bp": 6.3,
-            "pct": 1.2
+            "bp": 11.8,
+            "pct": 2.28
           },
           "yearToDate": {
-            "bp": 45.4,
-            "pct": 9.38
+            "bp": 45.2,
+            "pct": 9.34
           }
         },
         "range52w": {
@@ -228,34 +228,34 @@
           "positionInRange": 0.64
         },
         "volatility": {
-          "annualizedPct": 13.9,
+          "annualizedPct": 13.8,
           "vsOwnYearMedian": 1.19,
           "regime": "normal"
         }
       },
       "USD/JPY": {
-        "last": 158.931,
+        "last": 159.009,
         "tradedToday": true,
         "change": {
           "day": {
-            "abs": 0.419,
-            "pct": 0.26
+            "abs": 0.078,
+            "pct": 0.05
           },
           "week": {
-            "abs": -0.849,
-            "pct": -0.53
+            "abs": -0.514,
+            "pct": -0.32
           },
           "month": {
-            "abs": 2.117,
-            "pct": 1.35
+            "abs": 2.195,
+            "pct": 1.4
           },
           "threeMonths": {
-            "abs": 0.027,
-            "pct": 0.02
+            "abs": -0.13,
+            "pct": -0.08
           },
           "yearToDate": {
-            "abs": 2.518,
-            "pct": 1.61
+            "abs": 2.596,
+            "pct": 1.66
           }
         },
         "range52w": {
@@ -264,74 +264,74 @@
           "positionInRange": 0.57
         },
         "volatility": {
-          "annualizedPct": 4.4,
-          "vsOwnYearMedian": 0.59,
+          "annualizedPct": 4.2,
+          "vsOwnYearMedian": 0.56,
           "regime": "calm"
         }
       },
       "US Dollar Index (DXY)": {
-        "last": 104.32,
+        "last": 103.973,
         "tradedToday": true,
         "change": {
           "day": {
-            "abs": 0.48,
-            "pct": 0.46
+            "abs": -0.347,
+            "pct": -0.33
           },
           "week": {
-            "abs": 0.831,
-            "pct": 0.8
+            "abs": 0.364,
+            "pct": 0.35
           },
           "month": {
-            "abs": 2.568,
-            "pct": 2.52
+            "abs": 2.221,
+            "pct": 2.18
           },
           "threeMonths": {
-            "abs": 5.32,
-            "pct": 5.37
+            "abs": 5.053,
+            "pct": 5.11
           },
           "yearToDate": {
-            "abs": 6.04,
-            "pct": 6.15
+            "abs": 5.693,
+            "pct": 5.79
           }
         },
         "range52w": {
           "high": 104.32,
           "low": 96.22,
-          "positionInRange": 1
+          "positionInRange": 0.96
         },
         "volatility": {
-          "annualizedPct": 5.7,
-          "vsOwnYearMedian": 1.19,
+          "annualizedPct": 5.9,
+          "vsOwnYearMedian": 1.22,
           "regime": "normal"
         }
       },
       "USD/CAD": {
-        "last": 1.4339,
+        "last": 1.4365,
         "tradedToday": true,
         "change": {
           "day": {
-            "abs": 0,
-            "pct": 0
+            "abs": 0.0027,
+            "pct": 0.19
           },
           "week": {
-            "abs": 0.007,
-            "pct": 0.49
+            "abs": 0.0068,
+            "pct": 0.48
           },
           "month": {
-            "abs": 0.0337,
-            "pct": 2.4
+            "abs": 0.0363,
+            "pct": 2.6
           },
           "threeMonths": {
-            "abs": 0.0546,
-            "pct": 3.96
+            "abs": 0.0525,
+            "pct": 3.79
           },
           "yearToDate": {
-            "abs": 0.0644,
-            "pct": 4.7
+            "abs": 0.0671,
+            "pct": 4.9
           }
         },
         "range52w": {
-          "high": 1.4339,
+          "high": 1.4365,
           "low": 1.3492,
           "positionInRange": 1
         },
@@ -342,34 +342,34 @@
         }
       },
       "USD/INR": {
-        "last": 92.673,
+        "last": 92.9152,
         "tradedToday": true,
         "change": {
           "day": {
-            "abs": 0.013,
-            "pct": 0.01
+            "abs": 0.2422,
+            "pct": 0.26
           },
           "week": {
-            "abs": -1.565,
-            "pct": -1.66
+            "abs": -1.0479,
+            "pct": -1.11
           },
           "month": {
-            "abs": -2.257,
-            "pct": -2.38
+            "abs": -2.0148,
+            "pct": -2.12
           },
           "threeMonths": {
-            "abs": -3.0273,
-            "pct": -3.16
+            "abs": -2.8079,
+            "pct": -2.93
           },
           "yearToDate": {
-            "abs": 2.9036,
-            "pct": 3.24
+            "abs": 3.1458,
+            "pct": 3.5
           }
         },
         "range52w": {
           "high": 96.8769,
           "low": 89.1478,
-          "positionInRange": 0.46
+          "positionInRange": 0.49
         },
         "volatility": {
           "annualizedPct": 4.9,
@@ -380,96 +380,96 @@
     },
     "crossAsset": {
       "yieldCurve30yMinus10y": {
-        "spreadPct": 0.376,
+        "spreadPct": 0.388,
         "monthAgoPct": 0.327,
-        "changeOverMonthBp": 4.9,
+        "changeOverMonthBp": 6.1,
         "shape": "steepening"
       },
       "yieldCurve30yMinus5y": {
-        "spreadPct": 0.566,
+        "spreadPct": 0.58,
         "monthAgoPct": 0.51,
-        "changeOverMonthBp": 5.6,
+        "changeOverMonthBp": 7,
         "shape": "steepening"
       },
       "goldOuncesPerBitcoin": {
-        "now": 16.57,
-        "changeOverMonthPct": -17.53
+        "now": 16.62,
+        "changeOverMonthPct": -17.27
       },
       "copperToGoldRatioX1000": {
-        "now": 1.541,
-        "changeOverMonthPct": -4.89
+        "now": 1.536,
+        "changeOverMonthPct": -5.23
       },
       "dollarIndexOwnMove": {
-        "dayPct": 0.46,
-        "weekPct": 0.8
+        "dayPct": -0.33,
+        "weekPct": 0.35
       }
     },
     "context": {
       "S&P 500": {
-        "last": 7237.1699,
+        "last": 7201.0898,
         "tradedToday": true,
         "change": {
           "day": {
-            "abs": 326.7798,
-            "pct": 4.73
+            "abs": -36.0801,
+            "pct": -0.5
           },
           "week": {
-            "abs": -179.4199,
-            "pct": -2.42
+            "abs": -139.4399,
+            "pct": -1.9
           },
           "month": {
-            "abs": -386.5103,
-            "pct": -5.07
+            "abs": -422.5903,
+            "pct": -5.54
           },
           "threeMonths": {
-            "abs": -415.6899,
-            "pct": -5.43
+            "abs": -476.1899,
+            "pct": -6.2
           },
           "yearToDate": {
-            "abs": 391.6699,
-            "pct": 5.72
+            "abs": 355.5898,
+            "pct": 5.2
           }
         },
         "range52w": {
           "high": 7818.9302,
           "low": 6343.7202,
-          "positionInRange": 0.61
+          "positionInRange": 0.58
         },
         "volatility": {
-          "annualizedPct": 32,
-          "vsOwnYearMedian": 2.7,
+          "annualizedPct": 31.8,
+          "vsOwnYearMedian": 2.68,
           "regime": "choppy"
         }
       },
       "US 5-year Treasury yield": {
-        "last": 4.728,
+        "last": 4.712,
         "tradedToday": true,
         "change": {
           "day": {
-            "bp": 2.7,
-            "pct": 0.57
+            "bp": -1.6,
+            "pct": -0.34
           },
           "week": {
-            "bp": -20.7,
-            "pct": -4.19
+            "bp": -18.8,
+            "pct": -3.84
           },
           "month": {
-            "bp": -7.7,
-            "pct": -1.6
+            "bp": -9.3,
+            "pct": -1.93
           },
           "threeMonths": {
-            "bp": 32,
-            "pct": 7.26
+            "bp": 36.1,
+            "pct": 8.3
           },
           "yearToDate": {
-            "bp": 100.6,
-            "pct": 27.03
+            "bp": 99,
+            "pct": 26.6
           }
         },
         "range52w": {
           "high": 5.089,
           "low": 3.512,
-          "positionInRange": 0.77
+          "positionInRange": 0.76
         },
         "volatility": {
           "annualizedPct": 23.6,
@@ -478,82 +478,82 @@
         }
       },
       "MOVE index (Treasury-market volatility)": {
-        "last": 100.91,
+        "last": 98.8378,
         "tradedToday": true,
         "change": {
           "day": {
-            "abs": -5.4019,
-            "pct": -5.08
+            "abs": -2.0722,
+            "pct": -2.05
           },
           "week": {
-            "abs": -0.3724,
-            "pct": -0.37
+            "abs": -3.0396,
+            "pct": -2.98
           },
           "month": {
-            "abs": -2.4,
-            "pct": -2.32
+            "abs": -4.4722,
+            "pct": -4.33
           },
           "threeMonths": {
-            "abs": 26.93,
-            "pct": 36.4
+            "abs": 26.9178,
+            "pct": 37.43
           },
           "yearToDate": {
-            "abs": 36.95,
-            "pct": 57.77
+            "abs": 34.8778,
+            "pct": 54.53
           }
         },
         "range52w": {
           "high": 115.02,
           "low": 55.77,
-          "positionInRange": 0.76
+          "positionInRange": 0.73
         },
         "volatility": {
-          "annualizedPct": 79.1,
-          "vsOwnYearMedian": 1.02,
+          "annualizedPct": 79.3,
+          "vsOwnYearMedian": 1.03,
           "regime": "normal"
         }
       },
       "VIX (equity-market volatility)": {
-        "last": 26.62,
+        "last": 26.36,
         "tradedToday": true,
         "change": {
           "day": {
-            "abs": -9.27,
-            "pct": -25.83
+            "abs": -0.26,
+            "pct": -0.98
           },
           "week": {
-            "abs": 3.71,
-            "pct": 16.19
+            "abs": 0.9,
+            "pct": 3.54
           },
           "month": {
-            "abs": 7.17,
-            "pct": 36.86
+            "abs": 6.91,
+            "pct": 35.53
           },
           "threeMonths": {
-            "abs": 10.77,
-            "pct": 67.95
+            "abs": 10.91,
+            "pct": 70.61
           },
           "yearToDate": {
-            "abs": 11.67,
-            "pct": 78.06
+            "abs": 11.41,
+            "pct": 76.32
           }
         },
         "range52w": {
           "high": 35.89,
           "low": 13.47,
-          "positionInRange": 0.59
+          "positionInRange": 0.57
         },
         "volatility": {
-          "annualizedPct": 292.9,
-          "vsOwnYearMedian": 2.53,
+          "annualizedPct": 292,
+          "vsOwnYearMedian": 2.52,
           "regime": "choppy"
         }
       }
     }
   },
   "usage": {
-    "inputTokens": 19971,
-    "outputTokens": 6060,
+    "inputTokens": 9330,
+    "outputTokens": 6513,
     "cacheReadTokens": 0,
     "cacheWriteTokens": 0
   }
